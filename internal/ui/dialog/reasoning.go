@@ -7,11 +7,11 @@ import (
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 

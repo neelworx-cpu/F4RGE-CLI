@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 )
 
 const projectsFileName = "projects.json"

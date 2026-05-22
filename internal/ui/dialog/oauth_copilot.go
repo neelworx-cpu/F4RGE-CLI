@@ -7,9 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
-	"github.com/charmbracelet/crush/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth/copilot"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
 )
 
 func NewOAuthCopilot(

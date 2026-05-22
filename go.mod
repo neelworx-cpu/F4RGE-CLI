@@ -1,4 +1,4 @@
-module github.com/charmbracelet/crush
+module github.com/neelworx-cpu/F4RGE-CLI
 
 go 1.26.3
 

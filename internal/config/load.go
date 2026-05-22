@@ -18,13 +18,13 @@ import (
 	"testing"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/env"
-	"github.com/charmbracelet/crush/internal/filepathext"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/home"
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/csync"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/env"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filepathext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/home"
 	"github.com/qjebbs/go-jsons"
 )
 
@@ -138,15 +138,15 @@ func mustMarshalConfig(cfg *Config) []byte {
 	return data
 }
 
-func PushPopCrushEnv() func() {
+func PushPopF4rgedEnv() func() {
 	var found []string
 	for _, ev := range os.Environ() {
-		if strings.HasPrefix(ev, "CRUSH_") {
+		if strings.HasPrefix(ev, "F4RGED_") {
 			pair := strings.SplitN(ev, "=", 2)
 			if len(pair) != 2 {
 				continue
 			}
-			found = append(found, strings.TrimPrefix(pair[0], "CRUSH_"))
+			found = append(found, strings.TrimPrefix(pair[0], "F4RGED_"))
 		}
 	}
 	backups := make(map[string]string)
@@ -155,7 +155,7 @@ func PushPopCrushEnv() func() {
 	}
 
 	for _, ev := range found {
-		os.Setenv(ev, os.Getenv("CRUSH_"+ev))
+		os.Setenv(ev, os.Getenv("F4RGED_"+ev))
 	}
 
 	restore := func() {
@@ -168,7 +168,7 @@ func PushPopCrushEnv() func() {
 
 func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver VariableResolver, knownProviders []catwalk.Provider) error {
 	knownProviderNames := make(map[string]bool)
-	restore := PushPopCrushEnv()
+	restore := PushPopF4rgedEnv()
 	defer restore()
 
 	// When disable_default_providers is enabled, skip all default/embedded
@@ -463,11 +463,11 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	// Project specific skills dirs.
 	c.Options.SkillsPaths = append(c.Options.SkillsPaths, ProjectSkillsDir(workingDir)...)
 
-	if str, ok := os.LookupEnv("CRUSH_DISABLE_PROVIDER_AUTO_UPDATE"); ok {
+	if str, ok := os.LookupEnv("F4RGED_DISABLE_PROVIDER_AUTO_UPDATE"); ok {
 		c.Options.DisableProviderAutoUpdate, _ = strconv.ParseBool(str)
 	}
 
-	if str, ok := os.LookupEnv("CRUSH_DISABLE_DEFAULT_PROVIDERS"); ok {
+	if str, ok := os.LookupEnv("F4RGED_DISABLE_DEFAULT_PROVIDERS"); ok {
 		c.Options.DisableDefaultProviders, _ = strconv.ParseBool(str)
 	}
 
@@ -722,7 +722,7 @@ func configureSelectedModels(store *ConfigStore, knownProviders []catwalk.Provid
 // lookupConfigs searches config files starting at cwd and walking up
 // through the current project. The upward walk stops at the git
 // working tree root when one can be detected, otherwise at cwd itself,
-// so an unrelated crush.json placed above the project is never picked
+// so an unrelated 4rged.json placed above the project is never picked
 // up. Global user-level config locations are always included
 // regardless of the boundary.
 func lookupConfigs(cwd string) []string {
@@ -822,8 +822,8 @@ func hasAWSCredentials(env env.Env) bool {
 
 // GlobalConfig returns the global configuration file path for the application.
 func GlobalConfig() string {
-	if crushGlobal := os.Getenv("CRUSH_GLOBAL_CONFIG"); crushGlobal != "" {
-		return filepath.Join(crushGlobal, fmt.Sprintf("%s.json", appName))
+	if f4rgedGlobal := os.Getenv("F4RGED_GLOBAL_CONFIG"); f4rgedGlobal != "" {
+		return filepath.Join(f4rgedGlobal, fmt.Sprintf("%s.json", appName))
 	}
 	return filepath.Join(home.Config(), appName, fmt.Sprintf("%s.json", appName))
 }
@@ -831,8 +831,8 @@ func GlobalConfig() string {
 // GlobalCacheDir returns the path to the global cache directory for the
 // application.
 func GlobalCacheDir() string {
-	if crushCache := os.Getenv("CRUSH_CACHE_DIR"); crushCache != "" {
-		return crushCache
+	if f4rgedCache := os.Getenv("F4RGED_CACHE_DIR"); f4rgedCache != "" {
+		return f4rgedCache
 	}
 	if xdgCacheHome := os.Getenv("XDG_CACHE_HOME"); xdgCacheHome != "" {
 		return filepath.Join(xdgCacheHome, appName)
@@ -855,16 +855,16 @@ func ProjectConfigs(cwd string) []string {
 // GlobalConfigData returns the path to the main data directory for the application.
 // this config is used when the app overrides configurations instead of updating the global config.
 func GlobalConfigData() string {
-	if crushData := os.Getenv("CRUSH_GLOBAL_DATA"); crushData != "" {
-		return filepath.Join(crushData, fmt.Sprintf("%s.json", appName))
+	if f4rgedData := os.Getenv("F4RGED_GLOBAL_DATA"); f4rgedData != "" {
+		return filepath.Join(f4rgedData, fmt.Sprintf("%s.json", appName))
 	}
 	if xdgDataHome := os.Getenv("XDG_DATA_HOME"); xdgDataHome != "" {
 		return filepath.Join(xdgDataHome, appName, fmt.Sprintf("%s.json", appName))
 	}
 
 	// return the path to the main data directory
-	// for windows, it should be in `%LOCALAPPDATA%/crush/`
-	// for linux and macOS, it should be in `$HOME/.local/share/crush/`
+	// for windows, it should be in `%LOCALAPPDATA%/4rged/`
+	// for linux and macOS, it should be in `$HOME/.local/share/4rged/`
 	if runtime.GOOS == "windows" {
 		localAppData := cmp.Or(
 			os.Getenv("LOCALAPPDATA"),
@@ -929,7 +929,7 @@ func worktreeRoot(dir string) string {
 // projectBoundary returns the directory at which an upward configuration
 // search rooted at dir should stop. It is the git working tree root when
 // one can be detected, otherwise dir itself. Returning dir as a
-// fallback keeps Crush from silently adopting state files placed above
+// fallback keeps 4rged from silently adopting state files placed above
 // the current project.
 func projectBoundary(dir string) string {
 	if root := worktreeRoot(dir); root != "" {
@@ -946,8 +946,8 @@ func projectBoundary(dir string) string {
 // Skills in these directories are auto-discovered and their files can be read
 // without permission prompts.
 func GlobalSkillsDirs() []string {
-	if crushSkills := os.Getenv("CRUSH_SKILLS_DIR"); crushSkills != "" {
-		return []string{crushSkills}
+	if f4rgedSkills := os.Getenv("F4RGED_SKILLS_DIR"); f4rgedSkills != "" {
+		return []string{f4rgedSkills}
 	}
 
 	paths := []string{
@@ -958,7 +958,7 @@ func GlobalSkillsDirs() []string {
 		filepath.Join(home.Dir(), ".claude", "skills"),
 	}
 
-	// On Windows, also load from app data on top of `$HOME/.config/crush`.
+	// On Windows, also load from app data on top of `$HOME/.config/4rged`.
 	// This is here mostly for backwards compatibility.
 	if runtime.GOOS == "windows" {
 		appData := cmp.Or(
@@ -975,12 +975,12 @@ func GlobalSkillsDirs() []string {
 	return paths
 }
 
-// ProjectSkillsDir returns the default project directories for which Crush
+// ProjectSkillsDir returns the default project directories for which F4rged
 // will look for skills.
 func ProjectSkillsDir(workingDir string) []string {
 	return []string{
 		filepath.Join(workingDir, ".agents/skills"),
-		filepath.Join(workingDir, ".crush/skills"),
+		filepath.Join(workingDir, ".4rged/skills"),
 		filepath.Join(workingDir, ".claude/skills"),
 		filepath.Join(workingDir, ".cursor/skills"),
 	}

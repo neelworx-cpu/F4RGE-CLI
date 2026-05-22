@@ -5,10 +5,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	mcptools "github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/app"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/pubsub"
+	mcptools "github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/app"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
 )
 
 // SubscribeEvents returns a per-caller event channel for a workspace.

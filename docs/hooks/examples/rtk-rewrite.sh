@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# RTK hook for Crush
+# RTK hook for 4RGED
 # This hook rewrites bash commands to use rtk for token savings.
 #
 # https://github.com/rtk-ai/rtk
@@ -39,7 +39,7 @@ if [ -n "$RTK_VERSION" ]; then
     fi
 fi
 
-CMD="${CRUSH_TOOL_INPUT_COMMAND:-}"
+CMD="${F4RGED_TOOL_INPUT_COMMAND:-}"
 if [ -z "$CMD" ]; then
     exit 0
 fi

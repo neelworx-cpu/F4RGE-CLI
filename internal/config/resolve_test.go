@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/env"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/env"
 	"github.com/stretchr/testify/require"
 )
 

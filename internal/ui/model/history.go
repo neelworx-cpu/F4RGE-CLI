@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/charmbracelet/crush/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
 )
 
 // promptHistoryLoadedMsg is sent when prompt history is loaded.
@@ -102,8 +102,9 @@ func (m *UI) handleHistoryEscape(msg tea.Msg) tea.Cmd {
 
 // updateHistoryDraft updates history state when text is modified.
 func (m *UI) updateHistoryDraft(oldValue string) {
-	if m.textarea.Value() != oldValue {
-		m.promptHistory.draft = m.textarea.Value()
+	activeTextarea := m.activeTextarea()
+	if activeTextarea.Value() != oldValue {
+		m.promptHistory.draft = activeTextarea.Value()
 		m.promptHistory.index = -1
 	}
 }

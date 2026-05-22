@@ -31,6 +31,91 @@ func renderWord(spacing int, stretchIndex int, letterforms ...letterform) string
 	)
 }
 
+// Letter4 renders the 4 in the 4RGED wordmark.
+func Letter4(stretch bool) string {
+	left := heredoc.Doc(`
+		▄
+		█
+	`)
+	middle := heredoc.Doc(`
+		▀
+		▀
+	`)
+	right := heredoc.Doc(`
+		█
+		█
+		▀
+	`)
+	return joinLetterform(
+		left,
+		stretchLetterformPart(middle, letterformProps{
+			stretch:    stretch,
+			width:      3,
+			minStretch: 3,
+			maxStretch: 4,
+		}),
+		right,
+	)
+}
+
+// LetterD renders the letter D in a stylized way.
+func LetterD(stretch bool) string {
+	left := heredoc.Doc(`
+		█
+		█
+		▀
+	`)
+	center := heredoc.Doc(`
+		▀
+		 
+		▄
+	`)
+	right := heredoc.Doc(`
+		▄
+		█
+		▀
+	`)
+	return joinLetterform(
+		left,
+		stretchLetterformPart(center, letterformProps{
+			stretch:    false,
+			width:      3,
+			minStretch: 7,
+			maxStretch: 12,
+		}),
+		right,
+	)
+}
+
+// LetterG renders the letter G in a stylized way.
+func LetterG(stretch bool) string {
+	left := heredoc.Doc(`
+		▄
+		█
+		▀
+	`)
+	center := heredoc.Doc(`
+		▀
+		 
+		▄
+	`)
+	right := heredoc.Doc(`
+		▀
+		█
+		▀
+	`)
+	return joinLetterform(
+		left,
+		stretchLetterformPart(center, letterformProps{
+			stretch:    stretch,
+			width:      3,
+			minStretch: 7,
+			maxStretch: 12,
+		}),
+		right,
+	)
+}
+
 // LetterC renders the letter C in a stylized way. It takes an integer that
 // determines how many cells to stretch the letter. If the stretch is less than
 // 1, it defaults to no stretching.

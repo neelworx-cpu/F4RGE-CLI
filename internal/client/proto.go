@@ -13,11 +13,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/proto"
-	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
 )
 
 // ListWorkspaces retrieves all workspaces from the server.

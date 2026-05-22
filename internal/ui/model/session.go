@@ -10,19 +10,21 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/diff"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
-	"github.com/charmbracelet/crush/internal/ui/util"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/diff"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/util"
 )
 
 // loadSessionMsg is a message indicating that a session and its files have
 // been loaded.
 type loadSessionMsg struct {
+	paneID    int
+	keepSplit bool
 	session   *session.Session
 	files     []SessionFile
 	readFiles []string
@@ -65,6 +67,14 @@ type SessionFile struct {
 // It returns a tea.Cmd that, when executed, fetches the session data and
 // returns a sessionFilesLoadedMsg containing the processed session files.
 func (m *UI) loadSession(sessionID string) tea.Cmd {
+	return m.loadSessionForPane(primaryPane, sessionID, false)
+}
+
+func (m *UI) loadSessionIntoPane(paneID int, sessionID string) tea.Cmd {
+	return m.loadSessionForPane(paneID, sessionID, true)
+}
+
+func (m *UI) loadSessionForPane(paneID int, sessionID string, keepSplit bool) tea.Cmd {
 	return func() tea.Msg {
 		session, err := m.com.Workspace.GetSession(context.Background(), sessionID)
 		if err != nil {
@@ -82,6 +92,8 @@ func (m *UI) loadSession(sessionID string) tea.Cmd {
 		}
 
 		return loadSessionMsg{
+			paneID:    paneID,
+			keepSplit: keepSplit,
 			session:   &session,
 			files:     sessionFiles,
 			readFiles: readFiles,
@@ -141,18 +153,20 @@ func (m *UI) loadSessionFiles(sessionID string) ([]SessionFile, error) {
 // handleFileEvent processes file change events and updates the session file
 // list with new or updated file information.
 func (m *UI) handleFileEvent(file history.File) tea.Cmd {
-	if m.session == nil || file.SessionID != m.session.ID {
+	paneID, ok := m.paneIDForSession(file.SessionID)
+	if !ok {
 		return nil
 	}
 
 	return func() tea.Msg {
-		sessionFiles, err := m.loadSessionFiles(m.session.ID)
+		sessionFiles, err := m.loadSessionFiles(file.SessionID)
 		// could not load session files
 		if err != nil {
 			return util.NewErrorMsg(err)
 		}
 
 		return sessionFilesUpdatesMsg{
+			paneID:       paneID,
 			sessionFiles: sessionFiles,
 		}
 	}
@@ -162,6 +176,7 @@ func (m *UI) handleFileEvent(file history.File) tea.Cmd {
 // with their addition/deletion counts.
 func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 	t := m.com.Styles
+	sessionFiles := m.activeSidebarSessionFiles()
 
 	title := t.Files.SectionTitle.Render("Modified Files")
 	if isSection {
@@ -169,7 +184,7 @@ func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 	}
 	list := t.Files.EmptyMessage.Render("None")
 	var filesWithChanges []SessionFile
-	for _, f := range m.sessionFiles {
+	for _, f := range sessionFiles {
 		if f.Additions == 0 && f.Deletions == 0 {
 			continue
 		}

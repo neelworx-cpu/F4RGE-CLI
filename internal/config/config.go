@@ -13,15 +13,15 @@ import (
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/oauth"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
 	"github.com/invopop/jsonschema"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/csync"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth/copilot"
 )
 
 const (
-	appName              = "crush"
-	defaultDataDirectory = ".crush"
+	appName              = "4rged"
+	defaultDataDirectory = ".4rged"
 	defaultInitializeAs  = "AGENTS.md"
 )
 
@@ -33,12 +33,12 @@ var defaultContextPaths = []string{
 	"CLAUDE.local.md",
 	"GEMINI.md",
 	"gemini.md",
-	"crush.md",
-	"crush.local.md",
-	"Crush.md",
-	"Crush.local.md",
-	"CRUSH.md",
-	"CRUSH.local.md",
+	"f4rged.md",
+	"f4rged.local.md",
+	"F4rged.md",
+	"F4rged.local.md",
+	"F4RGED.md",
+	"F4RGED.local.md",
 	"AGENTS.md",
 	"agents.md",
 	"Agents.md",
@@ -214,8 +214,7 @@ type LSPConfig struct {
 type TUIOptions struct {
 	CompactMode bool   `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
 	DiffMode    string `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
-	// Here we can add themes later or any TUI related options
-	//
+	Theme       string `json:"theme,omitempty" jsonschema:"description=Theme for the TUI interface,enum=dark,enum=light,default=dark"`
 
 	Completions Completions `json:"completions,omitzero" jsonschema:"description=Completions UI options"`
 	Transparent *bool       `json:"transparent,omitempty" jsonschema:"description=Enable transparent background for the TUI interface,default=false"`
@@ -246,7 +245,7 @@ const (
 type Attribution struct {
 	TrailerStyle  TrailerStyle `json:"trailer_style,omitempty" jsonschema:"description=Style of attribution trailer to add to commits,enum=none,enum=co-authored-by,enum=assisted-by,default=assisted-by"`
 	CoAuthoredBy  *bool        `json:"co_authored_by,omitempty" jsonschema:"description=Deprecated: use trailer_style instead"`
-	GeneratedWith bool         `json:"generated_with,omitempty" jsonschema:"description=Add Generated with Crush line to commit messages and issues and PRs,default=true"`
+	GeneratedWith bool         `json:"generated_with,omitempty" jsonschema:"description=Add Generated with F4rged line to commit messages and issues and PRs,default=true"`
 }
 
 // JSONSchemaExtend marks the co_authored_by field as deprecated in the schema.
@@ -259,27 +258,27 @@ func (Attribution) JSONSchemaExtend(schema *jsonschema.Schema) {
 }
 
 type Options struct {
-	ContextPaths         []string    `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=CRUSH.md"`
-	SkillsPaths          []string    `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/crush/skills,example=./skills"`
+	ContextPaths         []string    `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=F4RGED.md"`
+	SkillsPaths          []string    `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/4rged/skills,example=./skills"`
 	TUI                  *TUIOptions `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
 	Debug                bool        `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
 	DebugLSP             bool        `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
 	DisableAutoSummarize bool        `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`
-	// DataDirectory is where Crush keeps per-project state such as
+	// DataDirectory is where F4rged keeps per-project state such as
 	// the SQLite database and workspace overrides. Relative paths are
 	// resolved against the working directory; absolute paths are used
 	// verbatim. After defaulting the stored value is always absolute.
-	DataDirectory             string       `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.crush,example=.crush"`
+	DataDirectory             string       `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.4rged,example=.4rged"`
 	DisabledTools             []string     `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
 	DisableProviderAutoUpdate bool         `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
 	DisableDefaultProviders   bool         `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled\\, providers must be fully specified in the config file with base_url\\, models\\, and api_key - no merging with defaults occurs,default=false"`
 	Attribution               *Attribution `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
 	DisableMetrics            bool         `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
-	InitializeAs              string       `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=CRUSH.md,example=CLAUDE.md,example=docs/LLMs.md"`
+	InitializeAs              string       `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=F4RGED.md,example=CLAUDE.md,example=docs/LLMs.md"`
 	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
 	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
 	DisableNotifications      bool         `json:"disable_notifications,omitempty" jsonschema:"description=Disable desktop notifications,default=false"`
-	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=crush-config"`
+	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=4rged-config"`
 }
 
 type MCPs map[string]MCPConfig
@@ -561,7 +560,7 @@ func (h *HookConfig) TimeoutDuration() time.Duration {
 	return time.Duration(h.Timeout) * time.Second
 }
 
-// Config holds the configuration for crush.
+// Config holds the configuration for 4rged.
 type Config struct {
 	Schema string `json:"$schema,omitempty"`
 
@@ -656,8 +655,8 @@ func allToolNames() []string {
 	return []string{
 		"agent",
 		"bash",
-		"crush_info",
-		"crush_logs",
+		"f4rged_info",
+		"f4rged_logs",
 		"job_output",
 		"job_kill",
 		"download",

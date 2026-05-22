@@ -3,10 +3,10 @@ package chat
 import (
 	"encoding/json"
 
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 // -----------------------------------------------------------------------------

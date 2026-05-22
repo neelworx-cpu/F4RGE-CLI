@@ -45,12 +45,12 @@ Thumbs.db
 # Nix/direnv
 .direnv/
 
-**/.crush/**
+**/.4rged/**
 
-/crush
+/4rged
 /tmp/
 
 manpages/
-completions/crush.*sh
+completions/4rged.*sh
 .prettierignore
 .task

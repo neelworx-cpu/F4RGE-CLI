@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
 )
 
 func (a *sessionAgent) eventPromptSent(sessionID string) {

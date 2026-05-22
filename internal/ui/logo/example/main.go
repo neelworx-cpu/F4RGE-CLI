@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/ui/logo"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	"github.com/charmbracelet/x/term"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/logo"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 func main() {
@@ -18,12 +18,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Could not get terminal size: %s", err)
 	}
 
-	s := styles.CharmtonePantera()
+	s := styles.F4RGEDDark()
 	opts := logo.Opts{
 		FieldColor:   s.Logo.FieldColor,
 		TitleColorA:  s.Logo.TitleColorA,
 		TitleColorB:  s.Logo.TitleColorB,
-		CharmColor:   s.Logo.CharmColor,
+		BrandColor:   s.Logo.BrandColor,
 		VersionColor: s.Logo.VersionColor,
 		Width:        w,
 		Unstable:     true,

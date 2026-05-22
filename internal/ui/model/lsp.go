@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/app"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/app"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 // LSPInfo wraps LSP client information with diagnostic counts by severity.

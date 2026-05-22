@@ -15,7 +15,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/lucasb-eyer/go-colorful"
 
-	"github.com/charmbracelet/crush/internal/csync"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/csync"
 )
 
 const (

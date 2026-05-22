@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/google/uuid"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/db"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
 )
 
 const (

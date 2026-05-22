@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/env"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,7 +61,7 @@ func TestEnableDockerMCP(t *testing.T) {
 
 		// Create a temporary directory for config.
 		tmpDir := t.TempDir()
-		configPath := filepath.Join(tmpDir, "crush.json")
+		configPath := filepath.Join(tmpDir, "4rged.json")
 
 		cfg := &Config{
 			MCP: make(map[string]MCPConfig),
@@ -96,7 +96,7 @@ func TestEnableDockerMCP(t *testing.T) {
 
 		// Create a temporary directory for config.
 		tmpDir := t.TempDir()
-		configPath := filepath.Join(tmpDir, "crush.json")
+		configPath := filepath.Join(tmpDir, "4rged.json")
 
 		cfg := &Config{
 			MCP: make(map[string]MCPConfig),
@@ -121,7 +121,7 @@ func TestDisableDockerMCP(t *testing.T) {
 
 		// Create a temporary directory for config.
 		tmpDir := t.TempDir()
-		configPath := filepath.Join(tmpDir, "crush.json")
+		configPath := filepath.Join(tmpDir, "4rged.json")
 
 		cfg := &Config{
 			MCP: map[string]MCPConfig{
@@ -159,7 +159,7 @@ func TestDisableDockerMCP(t *testing.T) {
 		}
 		store := &ConfigStore{
 			config:         cfg,
-			globalDataPath: filepath.Join(t.TempDir(), "crush.json"),
+			globalDataPath: filepath.Join(t.TempDir(), "4rged.json"),
 			resolver:       NewShellVariableResolver(env.New()),
 		}
 
@@ -176,7 +176,7 @@ func TestEnableDockerMCPWithRealDockerWhenAvailable(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "crush.json")
+	configPath := filepath.Join(tmpDir, "4rged.json")
 
 	cfg := &Config{
 		MCP: make(map[string]MCPConfig),

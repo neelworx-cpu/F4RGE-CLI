@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/skills"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 type skillStatusItem struct {

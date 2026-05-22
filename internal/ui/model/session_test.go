@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,7 +112,7 @@ func TestFileList(t *testing.T) {
 }
 
 func minimalFileStyles() *styles.Styles {
-	st := styles.CharmtonePantera()
+	st := styles.F4RGEDDark()
 	st.Files.Path = lipgloss.NewStyle()
 	st.Files.Additions = lipgloss.NewStyle()
 	st.Files.Deletions = lipgloss.NewStyle()

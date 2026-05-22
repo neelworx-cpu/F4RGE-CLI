@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/shell"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/shell"
 )
 
 type BashParams struct {

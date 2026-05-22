@@ -8,20 +8,20 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 )
 
-const CrushInfoToolName = "crush_info"
+const F4rgedInfoToolName = "f4rged_info"
 
-//go:embed crush_info.md
-var crushInfoDescription string
+//go:embed f4rged_info.md
+var f4rgedInfoDescription string
 
-type CrushInfoParams struct{}
+type F4rgedInfoParams struct{}
 
-func NewCrushInfoTool(
+func NewF4rgedInfoTool(
 	cfg *config.ConfigStore,
 	lspManager *lsp.Manager,
 	allSkills []*skills.Skill,
@@ -29,15 +29,15 @@ func NewCrushInfoTool(
 	skillTracker *skills.Tracker,
 ) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
-		CrushInfoToolName,
-		crushInfoDescription,
-		func(ctx context.Context, _ CrushInfoParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			return fantasy.NewTextResponse(buildCrushInfo(cfg, lspManager, allSkills, activeSkills, skillTracker)), nil
+		F4rgedInfoToolName,
+		f4rgedInfoDescription,
+		func(ctx context.Context, _ F4rgedInfoParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse(buildF4rgedInfo(cfg, lspManager, allSkills, activeSkills, skillTracker)), nil
 		},
 	)
 }
 
-func buildCrushInfo(cfg *config.ConfigStore, lspManager *lsp.Manager, allSkills []*skills.Skill, activeSkills []*skills.Skill, skillTracker *skills.Tracker) string {
+func buildF4rgedInfo(cfg *config.ConfigStore, lspManager *lsp.Manager, allSkills []*skills.Skill, activeSkills []*skills.Skill, skillTracker *skills.Tracker) string {
 	var b strings.Builder
 
 	writeConfigFiles(&b, cfg)

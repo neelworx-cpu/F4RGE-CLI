@@ -18,23 +18,23 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/agent/notify"
-	"github.com/charmbracelet/crush/internal/agent/prompt"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/event"
-	"github.com/charmbracelet/crush/internal/filetracker"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/hooks"
-	"github.com/charmbracelet/crush/internal/log"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/notify"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/prompt"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/hooks"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/log"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth/copilot"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 	"golang.org/x/sync/errgroup"
 
 	"charm.land/fantasy/providers/anthropic"
@@ -496,7 +496,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		}
 	}
 
-	logFile := filepath.Join(c.cfg.Config().Options.DataDirectory, "logs", "crush.log")
+	logFile := filepath.Join(c.cfg.Config().Options.DataDirectory, "logs", "4rged.log")
 
 	// Build hook runner if PreToolUse hooks are configured.
 	var hookRunner *hooks.Runner
@@ -507,8 +507,8 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	allTools = append(
 		allTools,
 		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.Attribution, modelID),
-		tools.NewCrushInfoTool(c.cfg, c.lspManager, c.allSkills, c.activeSkills, c.skillTracker),
-		tools.NewCrushLogsTool(logFile),
+		tools.NewF4rgedInfoTool(c.cfg, c.lspManager, c.allSkills, c.activeSkills, c.skillTracker),
+		tools.NewF4rgedLogsTool(logFile),
 		tools.NewJobOutputTool(),
 		tools.NewJobKillTool(),
 		tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
@@ -903,7 +903,7 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 		switch providerCfg.ID {
 		case hyper.Name:
 			baseURL = hyper.BaseURL() + "/v1"
-			headers["x-crush-id"] = event.GetID()
+			headers["x-f4rged-id"] = event.GetID()
 		case string(catwalk.InferenceProviderZAI):
 			if providerCfg.ExtraBody == nil {
 				providerCfg.ExtraBody = map[string]any{}

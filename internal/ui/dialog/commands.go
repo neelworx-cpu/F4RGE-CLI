@@ -9,12 +9,12 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/commands"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 // CommandsID is the identifier for the commands dialog.
@@ -55,6 +55,7 @@ type Commands struct {
 
 	sessionID  string
 	hasSession bool
+	splitMode  bool
 	hasTodos   bool
 	hasQueue   bool
 	selected   CommandType
@@ -78,12 +79,13 @@ type Commands struct {
 var _ Dialog = (*Commands)(nil)
 
 // NewCommands creates a new commands dialog.
-func NewCommands(com *common.Common, sessionID string, hasSession, hasTodos, hasQueue bool, customCommands []commands.CustomCommand, mcpPrompts []commands.MCPPrompt) (*Commands, error) {
+func NewCommands(com *common.Common, sessionID string, hasSession, splitMode, hasTodos, hasQueue bool, customCommands []commands.CustomCommand, mcpPrompts []commands.MCPPrompt) (*Commands, error) {
 	c := &Commands{
 		com:            com,
 		selected:       SystemCommands,
 		sessionID:      sessionID,
 		hasSession:     hasSession,
+		splitMode:      splitMode,
 		hasTodos:       hasTodos,
 		hasQueue:       hasQueue,
 		customCommands: customCommands,
@@ -421,6 +423,7 @@ func (c *Commands) setCommandItems(commandType CommandType) {
 func (c *Commands) defaultCommands() []*CommandItem {
 	commands := []*CommandItem{
 		NewCommandItem(c.com.Styles, "new_session", "New Session", "ctrl+n", ActionNewSession{}),
+		NewCommandItem(c.com.Styles, "split_chat", "Split Chat", "", ActionSplitChat{}),
 		NewCommandItem(c.com.Styles, "switch_session", "Sessions", "ctrl+s", ActionOpenDialog{SessionsID}),
 		NewCommandItem(c.com.Styles, "switch_model", "Switch Model", "ctrl+l", ActionOpenDialog{ModelsID}),
 	}
@@ -428,6 +431,13 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	// Only show compact command if there's an active session
 	if c.hasSession {
 		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", "Summarize Session", "", ActionSummarize{SessionID: c.sessionID}))
+	}
+	if c.splitMode {
+		commands = append(
+			commands,
+			NewCommandItem(c.com.Styles, "close_left_chat", "Close Left Chat", "", ActionCloseSplitPane{PaneID: 0}),
+			NewCommandItem(c.com.Styles, "close_right_chat", "Close Right Chat", "", ActionCloseSplitPane{PaneID: 1}),
+		)
 	}
 
 	// Add reasoning toggle for models that support it
@@ -518,12 +528,12 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "init", "Initialize Project", "", ActionInitializeProject{}),
 	)
 
-	// Add transparent background toggle.
-	transparentLabel := "Disable Background Color"
-	if cfg != nil && cfg.Options != nil && cfg.Options.TUI.Transparent != nil && *cfg.Options.TUI.Transparent {
-		transparentLabel = "Enable Background Color"
+	// Add light/dark theme toggle.
+	themeLabel := "Light Theme"
+	if cfg != nil && cfg.Options != nil && cfg.Options.TUI.Theme == "light" {
+		themeLabel = "Dark Theme"
 	}
-	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_transparent", transparentLabel, "", ActionToggleTransparentBackground{}))
+	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_theme", themeLabel, "", ActionToggleTheme{}))
 
 	commands = append(
 		commands,

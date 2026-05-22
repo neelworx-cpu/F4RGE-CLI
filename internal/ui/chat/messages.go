@@ -9,21 +9,23 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/ui/anim"
-	"github.com/charmbracelet/crush/internal/ui/attachments"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/anim"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/attachments"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 // MessageLeftPaddingTotal is the total width that is taken up by the border +
-// padding. We also cap the width so text is readable to the maxTextWidth(120).
+// padding.
 const MessageLeftPaddingTotal = 2
 
-// maxTextWidth is the maximum width text messages can be
-const maxTextWidth = 120
+// maxTextWidth is the maximum width text messages can be.
+// Keep it effectively unbounded so the chat uses the available area up to the
+// sidebar instead of leaving a dead column on wide terminals.
+const maxTextWidth = 1000
 
 // Identifiable is an interface for items that can provide a unique identifier.
 type Identifiable interface {

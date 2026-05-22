@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/proto"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 	"github.com/stretchr/testify/require"
 )
 

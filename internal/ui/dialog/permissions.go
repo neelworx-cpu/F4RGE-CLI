@@ -10,13 +10,13 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/stringext"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/stringext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 // PermissionsID is the identifier for the permissions dialog.

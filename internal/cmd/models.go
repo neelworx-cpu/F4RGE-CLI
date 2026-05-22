@@ -9,8 +9,8 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2/tree"
-	"github.com/charmbracelet/crush/internal/config"
 	"github.com/mattn/go-isatty"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -19,10 +19,10 @@ var modelsCmd = &cobra.Command{
 	Short: "List all available models from configured providers",
 	Long:  `List all available models from configured providers. Shows provider name and model IDs.`,
 	Example: `# List all available models
-crush models
+f4rged models
 
 # Search models
-crush models gpt5`,
+f4rged models gpt5`,
 	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := ResolveCwd(cmd)
@@ -39,7 +39,7 @@ crush models gpt5`,
 		}
 
 		if !cfg.Config().IsConfigured() {
-			return fmt.Errorf("no providers configured - please run 'crush' to set up a provider interactively")
+			return fmt.Errorf("no providers configured - please run '4rged' to set up a provider interactively")
 		}
 
 		term := strings.ToLower(strings.Join(args, " "))

@@ -34,17 +34,17 @@ const (
 	ShellTypePowerShell
 )
 
-// CrushEnvMarkers returns a fresh slice of the environment variables that
-// Crush unconditionally sets on every shell it spawns — both the interactive
+// F4rgedEnvMarkers returns a fresh slice of the environment variables that
+// 4rged unconditionally sets on every shell it spawns — both the interactive
 // bash tool's [Shell] and the hook runner's [Run] calls. Tools that want to
 // detect "am I being invoked by an AI agent?" can check any of these.
 // Keeping them in one place guarantees the two shell surfaces cannot drift.
 // A fresh slice is returned on every call so callers may append freely.
-func CrushEnvMarkers() []string {
+func F4rgedEnvMarkers() []string {
 	return []string{
-		"CRUSH=1",
-		"AGENT=crush",
-		"AI_AGENT=crush",
+		"F4RGED=1",
+		"AGENT=4rged",
+		"AI_AGENT=4rged",
 	}
 }
 
@@ -94,8 +94,8 @@ func NewShell(opts *Options) *Shell {
 		env = os.Environ()
 	}
 
-	// Allow tools to detect execution by Crush.
-	env = append(env, CrushEnvMarkers()...)
+	// Allow tools to detect execution by 4rged.
+	env = append(env, F4rgedEnvMarkers()...)
 
 	logger := opts.Logger
 	if logger == nil {

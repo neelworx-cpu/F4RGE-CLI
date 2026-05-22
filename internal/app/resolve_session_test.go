@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
 	"github.com/stretchr/testify/require"
 )
 

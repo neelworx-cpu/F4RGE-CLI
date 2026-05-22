@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
 )
 
 const LSPRestartToolName = "lsp_restart"

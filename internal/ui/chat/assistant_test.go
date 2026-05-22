@@ -3,9 +3,9 @@ package chat
 import (
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +23,7 @@ import (
 func TestAssistantMessageItemExpandable(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	// Short thinking: under the tail-window cap, so the cycle is
 	// collapsed -> full -> collapsed (tail-window is skipped).
 	msg := thinkingMessage("m1", "step one\nstep two\nstep three", "")
@@ -52,7 +52,7 @@ func TestAssistantMessageItemExpandable(t *testing.T) {
 func TestAssistantMessageItemExpandableEmptyThinkingNoOp(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	msg := &message.Message{ID: "m1-empty", Role: message.Assistant}
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
@@ -82,7 +82,7 @@ func TestAssistantMessageItemExpandableEmptyThinkingNoOp(t *testing.T) {
 func TestAssistantMessageItemTailWindowBoundary(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 
 	atCap := buildLines(maxExpandedThinkingTailLines)
 	overCap := buildLines(maxExpandedThinkingTailLines + 1)
@@ -121,7 +121,7 @@ func buildLines(n int) string {
 func TestAssistantMessageItemHandleMouseClick(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	msg := &message.Message{ID: "m2", Role: message.Assistant}
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 	item.thinkingBoxHeight = 5

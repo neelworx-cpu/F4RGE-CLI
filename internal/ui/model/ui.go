@@ -25,39 +25,39 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/agent/notify"
-	agenttools "github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/app"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/home"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/skills"
-	"github.com/charmbracelet/crush/internal/ui/anim"
-	"github.com/charmbracelet/crush/internal/ui/attachments"
-	"github.com/charmbracelet/crush/internal/ui/chat"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/completions"
-	"github.com/charmbracelet/crush/internal/ui/dialog"
-	fimage "github.com/charmbracelet/crush/internal/ui/image"
-	"github.com/charmbracelet/crush/internal/ui/logo"
-	"github.com/charmbracelet/crush/internal/ui/notification"
-	"github.com/charmbracelet/crush/internal/ui/styles"
-	"github.com/charmbracelet/crush/internal/ui/util"
-	"github.com/charmbracelet/crush/internal/version"
-	"github.com/charmbracelet/crush/internal/workspace"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/charmbracelet/ultraviolet/screen"
 	"github.com/charmbracelet/x/editor"
 	xstrings "github.com/charmbracelet/x/exp/strings"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/notify"
+	agenttools "github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/app"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/commands"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/home"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/anim"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/attachments"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/chat"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/completions"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/dialog"
+	fimage "github.com/neelworx-cpu/F4RGE-CLI/internal/ui/image"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/logo"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/notification"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/util"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/version"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/workspace"
 )
 
 // MouseScrollThreshold defines how many lines to scroll the chat when a mouse
@@ -68,6 +68,11 @@ const MouseScrollThreshold = 5
 const (
 	compactModeWidthBreakpoint  = 120
 	compactModeHeightBreakpoint = 30
+)
+
+const (
+	primaryPane = iota
+	secondaryPane
 )
 
 // If pasted text has more than 10 newlines, treat it as a file attachment.
@@ -83,8 +88,8 @@ const sessionDetailsMaxHeight = 20
 const TextareaMaxHeight = 15
 
 // editorHeightMargin is the vertical margin added to the textarea height to
-// account for the attachments row (top) and bottom margin.
-const editorHeightMargin = 2
+// account for the attachments row, composer frame, and bottom margin.
+const editorHeightMargin = 4
 
 // TextareaMinHeight is the minimum height of the prompt textarea.
 const TextareaMinHeight = 3
@@ -150,6 +155,7 @@ type (
 
 	// sessionFilesUpdatesMsg is sent when the files for this session have been updated
 	sessionFilesUpdatesMsg struct {
+		paneID       int
 		sessionFiles []SessionFile
 	}
 	// creditsUpdatedMsg is sent when the remaining Hyper credits have been
@@ -157,7 +163,349 @@ type (
 	creditsUpdatedMsg struct {
 		credits int
 	}
+
+	themeChangedMsg struct {
+		theme string
+	}
 )
+
+type chatPane struct {
+	session             *session.Session
+	chat                *Chat
+	textarea            textarea.Model
+	lastUserMessageTime int64
+}
+
+func (m *UI) pane(paneID int) *chatPane {
+	if paneID == secondaryPane {
+		return m.secondaryPane
+	}
+	return &chatPane{
+		session:             m.session,
+		chat:                m.chat,
+		textarea:            m.textarea,
+		lastUserMessageTime: m.lastUserMessageTime,
+	}
+}
+
+func (m *UI) commitPane(paneID int, pane *chatPane) {
+	if pane == nil {
+		return
+	}
+	if paneID == secondaryPane {
+		m.secondaryPane = pane
+		return
+	}
+	m.session = pane.session
+	m.chat = pane.chat
+	m.textarea = pane.textarea
+	m.lastUserMessageTime = pane.lastUserMessageTime
+}
+
+func (m *UI) activeChat() *Chat {
+	if m.activePane == secondaryPane && m.secondaryPane != nil {
+		return m.secondaryPane.chat
+	}
+	return m.chat
+}
+
+func (m *UI) activeTextarea() *textarea.Model {
+	if m.activePane == secondaryPane && m.secondaryPane != nil {
+		return &m.secondaryPane.textarea
+	}
+	return &m.textarea
+}
+
+func (m *UI) activeSidebarPane() *chatPane {
+	if m.splitMode && m.activePane == secondaryPane && m.secondaryPane != nil {
+		return m.secondaryPane
+	}
+	return m.pane(primaryPane)
+}
+
+func (m *UI) activeSidebarSessionFiles() []SessionFile {
+	if m.splitMode && m.activePane == secondaryPane && m.secondaryPane != nil {
+		return m.secondaryPaneSessionFiles
+	}
+	return m.sessionFiles
+}
+
+func oppositePaneID(paneID int) int {
+	if paneID == secondaryPane {
+		return primaryPane
+	}
+	return secondaryPane
+}
+
+func paneName(paneID int) string {
+	if paneID == secondaryPane {
+		return "right"
+	}
+	return "left"
+}
+
+func (m *UI) paneSessionID(paneID int) string {
+	pane := m.pane(paneID)
+	if pane == nil || pane.session == nil {
+		return ""
+	}
+	return pane.session.ID
+}
+
+func (m *UI) activeSplitTargetPane() int {
+	if m.splitMode && m.secondaryPane != nil {
+		return m.activePane
+	}
+	return secondaryPane
+}
+
+func (m *UI) splitTargetIsDuplicate(paneID int, sessionID string) bool {
+	return sessionID != "" && m.paneSessionID(oppositePaneID(paneID)) == sessionID
+}
+
+func (m *UI) chatAtPoint(x, y int) (*Chat, image.Rectangle) {
+	pt := image.Pt(x, y)
+	if m.splitMode && m.secondaryPane != nil {
+		if pt.In(m.layout.secondaryMain) {
+			return m.secondaryPane.chat, m.layout.secondaryMain
+		}
+		if pt.In(m.layout.main) {
+			return m.chat, m.layout.main
+		}
+		return nil, image.Rectangle{}
+	}
+	if pt.In(m.layout.main) {
+		return m.chat, m.layout.main
+	}
+	return nil, image.Rectangle{}
+}
+
+func (m *UI) paneTargetAtPoint(x, y int) (int, uiFocusState, bool) {
+	pt := image.Pt(x, y)
+	if pt.In(m.layout.sidebar) {
+		return primaryPane, uiFocusNone, false
+	}
+	if m.splitMode && m.secondaryPane != nil {
+		switch {
+		case pt.In(m.layout.secondaryEditor):
+			return secondaryPane, uiFocusEditor, true
+		case pt.In(m.layout.secondaryMain):
+			return secondaryPane, uiFocusMain, true
+		case pt.In(m.layout.editor):
+			return primaryPane, uiFocusEditor, true
+		case pt.In(m.layout.main):
+			return primaryPane, uiFocusMain, true
+		}
+		return primaryPane, uiFocusNone, false
+	}
+	switch {
+	case pt.In(m.layout.editor):
+		return primaryPane, uiFocusEditor, true
+	case pt.In(m.layout.main):
+		return primaryPane, uiFocusMain, true
+	}
+	return primaryPane, uiFocusNone, false
+}
+
+func (m *UI) focusPane(paneID int, focus uiFocusState) tea.Cmd {
+	m.activePane = paneID
+	m.focus = focus
+	m.textarea.Blur()
+	m.chat.Blur()
+	if m.secondaryPane != nil {
+		m.secondaryPane.textarea.Blur()
+		m.secondaryPane.chat.Blur()
+	}
+	var cmd tea.Cmd
+	chat := m.activeChat()
+	switch focus {
+	case uiFocusEditor:
+		cmd = m.activeTextarea().Focus()
+	case uiFocusMain:
+		if chat != nil {
+			chat.Focus()
+			chat.SetSelected(chat.Len() - 1)
+		}
+	}
+	return cmd
+}
+
+func (m *UI) focusNextPaneTarget() tea.Cmd {
+	if !m.splitMode || m.secondaryPane == nil {
+		if m.focus == uiFocusEditor {
+			return m.focusPane(primaryPane, uiFocusMain)
+		}
+		return m.focusPane(primaryPane, uiFocusEditor)
+	}
+	switch {
+	case m.activePane == primaryPane && m.focus == uiFocusEditor:
+		return m.focusPane(primaryPane, uiFocusMain)
+	case m.activePane == primaryPane && m.focus == uiFocusMain:
+		return m.focusPane(secondaryPane, uiFocusEditor)
+	case m.activePane == secondaryPane && m.focus == uiFocusEditor:
+		return m.focusPane(secondaryPane, uiFocusMain)
+	default:
+		return m.focusPane(primaryPane, uiFocusEditor)
+	}
+}
+
+func (m *UI) paneIDForSession(sessionID string) (int, bool) {
+	if m.session != nil && m.session.ID == sessionID {
+		return primaryPane, true
+	}
+	if m.secondaryPane != nil && m.secondaryPane.session != nil && m.secondaryPane.session.ID == sessionID {
+		return secondaryPane, true
+	}
+	return primaryPane, false
+}
+
+func (m *UI) newSecondaryPane() *chatPane {
+	ta := newEditorTextarea(m.com)
+	if m.com.Workspace.PermissionSkipRequests() {
+		ta.SetPromptFunc(4, m.yoloPromptFunc)
+	} else {
+		ta.SetPromptFunc(4, m.normalPromptFunc)
+	}
+	ta.Blur()
+	return &chatPane{
+		chat:     NewChat(m.com),
+		textarea: ta,
+	}
+}
+
+func (m *UI) enterSplitMode() {
+	if m.secondaryPane == nil {
+		m.secondaryPane = m.newSecondaryPane()
+	}
+	m.state = uiChat
+	m.splitMode = true
+	m.activePane = secondaryPane
+	m.focus = uiFocusEditor
+	m.textarea.Blur()
+	m.chat.Blur()
+	m.secondaryPane.chat.Blur()
+	m.secondaryPane.textarea.Focus()
+	m.updateLayoutAndSize()
+}
+
+func (m *UI) exitSplitMode() {
+	m.splitMode = false
+	m.splitSessionSelectionActive = false
+	m.activePane = primaryPane
+	m.secondaryPane = nil
+	m.secondaryPaneSessionFiles = nil
+	m.focus = uiFocusEditor
+	m.textarea.Focus()
+	m.chat.Blur()
+	m.updateLayoutAndSize()
+}
+
+func (m *UI) closeSplitPane(paneID int) tea.Cmd {
+	if !m.splitMode || m.secondaryPane == nil {
+		return util.ReportWarn("Split chat is not active")
+	}
+	wasCompact := m.isCompact
+	if paneID == secondaryPane {
+		m.exitSplitMode()
+		m.isCompact = wasCompact
+		m.updateLayoutAndSize()
+		return util.CmdHandler(util.NewInfoMsg("Closed right chat"))
+	}
+
+	secondary := m.secondaryPane
+	m.session = secondary.session
+	m.chat = secondary.chat
+	m.textarea = secondary.textarea
+	m.lastUserMessageTime = secondary.lastUserMessageTime
+	m.sessionFiles = m.secondaryPaneSessionFiles
+	m.exitSplitMode()
+	m.isCompact = wasCompact
+	m.updateLayoutAndSize()
+	return util.CmdHandler(util.NewInfoMsg("Closed left chat"))
+}
+
+func (m *UI) applySplitPaneSession(msg loadSessionMsg) tea.Cmd {
+	if m.secondaryPane == nil {
+		m.secondaryPane = m.newSecondaryPane()
+	}
+	targetPane := msg.paneID
+	if targetPane != secondaryPane {
+		targetPane = primaryPane
+	}
+	if msg.session != nil && m.splitTargetIsDuplicate(targetPane, msg.session.ID) {
+		return util.ReportWarn("That session is already open in the other pane")
+	}
+	m.enterSplitMode()
+	if targetPane == secondaryPane {
+		m.secondaryPane.session = msg.session
+		m.secondaryPaneSessionFiles = msg.files
+	} else {
+		m.session = msg.session
+		m.sessionFiles = msg.files
+	}
+	focusCmd := m.focusPane(targetPane, uiFocusEditor)
+
+	msgs, err := m.com.Workspace.ListMessages(context.Background(), msg.session.ID)
+	if err != nil {
+		return util.ReportError(err)
+	}
+	return tea.Batch(
+		m.startLSPs(msg.lspFilePaths()),
+		m.setPaneSessionMessages(targetPane, msgs),
+		focusCmd,
+	)
+}
+
+func (m *UI) clearSplitPaneForNewSession(paneID int) tea.Cmd {
+	if m.secondaryPane == nil {
+		m.secondaryPane = m.newSecondaryPane()
+	}
+	targetPane := paneID
+	if targetPane != secondaryPane {
+		targetPane = primaryPane
+	}
+
+	m.enterSplitMode()
+	if targetPane == secondaryPane {
+		m.secondaryPane.session = nil
+		m.secondaryPaneSessionFiles = nil
+		m.secondaryPane.lastUserMessageTime = 0
+		m.secondaryPane.chat.ClearMessages()
+		m.secondaryPane.textarea.Reset()
+	} else {
+		m.session = nil
+		m.sessionFiles = nil
+		m.sessionFileReads = nil
+		m.lastUserMessageTime = 0
+		m.promptQueue = 0
+		m.pillsExpanded = false
+		m.pillsView = ""
+		m.chat.ClearMessages()
+		m.textarea.Reset()
+	}
+
+	return m.focusPane(targetPane, uiFocusEditor)
+}
+
+func (m *UI) openSplitChatDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.SplitChatID) {
+		m.dialog.BringToFront(dialog.SplitChatID)
+		return nil
+	}
+	targetPane := m.activeSplitTargetPane()
+	m.splitSessionTargetPane = targetPane
+	m.dialog.OpenDialog(dialog.NewSplitChat(m.com, paneName(targetPane), m.splitMode && m.secondaryPane != nil))
+	return nil
+}
+
+func (m *UI) openSplitSessionsDialog() tea.Cmd {
+	m.splitSessionSelectionActive = true
+	return m.openSessionsDialog()
+}
+
+func (m *UI) splitChatWithNewSession(paneID int) tea.Cmd {
+	return m.clearSplitPaneForNewSession(paneID)
+}
 
 // UI represents the main user interface model.
 type UI struct {
@@ -223,6 +571,14 @@ type UI struct {
 	// Chat components
 	chat *Chat
 
+	// split mode
+	splitMode                   bool
+	splitSessionSelectionActive bool
+	splitSessionTargetPane      int
+	activePane                  int
+	secondaryPane               *chatPane
+	secondaryPaneSessionFiles   []SessionFile
+
 	// onboarding state
 	onboarding struct {
 		yesInitializeSelected bool
@@ -283,16 +639,7 @@ type UI struct {
 
 // New creates a new instance of the [UI] model.
 func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
-	// Editor components
-	ta := textarea.New()
-	ta.SetStyles(com.Styles.Editor.Textarea)
-	ta.ShowLineNumbers = false
-	ta.CharLimit = -1
-	ta.SetVirtualCursor(false)
-	ta.DynamicHeight = true
-	ta.MinHeight = TextareaMinHeight
-	ta.MaxHeight = TextareaMaxHeight
-	ta.Focus()
+	ta := newEditorTextarea(com)
 
 	ch := NewChat(com)
 
@@ -372,12 +719,27 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 
 	opts := com.Config().Options
 
+	ui.applyTheme(styles.ThemeForMode(opts.TUI.Theme))
+
 	// disable indeterminate progress bar
 	ui.progressBarEnabled = opts.Progress == nil || *opts.Progress
 	// enable transparent mode
 	ui.isTransparent = opts.TUI.Transparent != nil && *opts.TUI.Transparent
 
 	return ui
+}
+
+func newEditorTextarea(com *common.Common) textarea.Model {
+	ta := textarea.New()
+	ta.SetStyles(com.Styles.Editor.Textarea)
+	ta.ShowLineNumbers = false
+	ta.CharLimit = -1
+	ta.SetVirtualCursor(false)
+	ta.DynamicHeight = true
+	ta.MinHeight = TextareaMinHeight
+	ta.MaxHeight = TextareaMaxHeight
+	ta.Focus()
+	return ta
 }
 
 // Init initializes the UI model.
@@ -516,11 +878,25 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notifyWindowFocused = true
 	case tea.BlurMsg:
 		m.notifyWindowFocused = false
+	case themeChangedMsg:
+		cfg := m.com.Config()
+		if cfg != nil && cfg.Options != nil {
+			cfg.Options.TUI.Theme = msg.theme
+		}
+		m.applyTheme(styles.ThemeForMode(msg.theme))
+		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Switched to "+msg.theme+" theme")))
 	case pubsub.Event[notify.Notification]:
 		if cmd := m.handleAgentNotification(msg.Payload); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case loadSessionMsg:
+		if msg.paneID == secondaryPane || msg.keepSplit {
+			cmds = append(cmds, m.applySplitPaneSession(msg))
+			break
+		}
+		if m.splitMode || m.secondaryPane != nil {
+			m.exitSplitMode()
+		}
 		if m.forceCompactMode {
 			m.isCompact = true
 		}
@@ -550,7 +926,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateLayoutAndSize()
 
 	case sessionFilesUpdatesMsg:
-		m.sessionFiles = msg.sessionFiles
+		if msg.paneID == secondaryPane {
+			m.secondaryPaneSessionFiles = msg.sessionFiles
+		} else {
+			m.sessionFiles = msg.sessionFiles
+		}
 		var paths []string
 		for _, f := range msg.sessionFiles {
 			paths = append(paths, f.LatestVersion.Path)
@@ -596,6 +976,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case pubsub.Event[session.Session]:
 		if msg.Type == pubsub.DeletedEvent {
+			if m.secondaryPane != nil && m.secondaryPane.session != nil && m.secondaryPane.session.ID == msg.Payload.ID {
+				m.exitSplitMode()
+			}
 			if m.session != nil && m.session.ID == msg.Payload.ID {
 				if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
@@ -612,8 +995,35 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.updateLayoutAndSize()
 			}
 		}
+		if m.secondaryPane != nil && m.secondaryPane.session != nil && msg.Payload.ID == m.secondaryPane.session.ID {
+			m.secondaryPane.session = &msg.Payload
+		}
 	case pubsub.Event[message.Message]:
 		// Check if this is a child session message for an agent tool.
+		if paneID, ok := m.paneIDForSession(msg.Payload.SessionID); ok {
+			switch msg.Type {
+			case pubsub.CreatedEvent:
+				cmds = append(cmds, m.appendPaneSessionMessage(paneID, msg.Payload))
+			case pubsub.UpdatedEvent:
+				cmds = append(cmds, m.updatePaneSessionMessage(paneID, msg.Payload))
+			case pubsub.DeletedEvent:
+				if pane := m.pane(paneID); pane != nil && pane.chat != nil {
+					pane.chat.RemoveMessage(msg.Payload.ID)
+					m.commitPane(paneID, pane)
+				}
+			}
+			if paneID == primaryPane {
+				if hasInProgressTodo(m.session.Todos) && m.isAgentBusy() && !m.todoIsSpinning {
+					m.todoIsSpinning = true
+					cmds = append(cmds, m.todoSpinner.Tick)
+				}
+				if m.todoIsSpinning && !m.isAgentBusy() {
+					m.todoIsSpinning = false
+				}
+				m.renderPills()
+			}
+			break
+		}
 		if m.session == nil {
 			break
 		}
@@ -668,7 +1078,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		if cmd := m.sendNotification(notification.Notification{
-			Title:   "Crush is waiting...",
+			Title:   "4rged is waiting...",
 			Message: fmt.Sprintf("Permission required to execute \"%s\"", msg.Payload.ToolName),
 		}); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -687,8 +1097,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.updateLayoutAndSize()
-		if m.state == uiChat && m.chat.Follow() {
-			if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+		activeChat := m.activeChat()
+		if m.state == uiChat && activeChat != nil && activeChat.Follow() {
+			if cmd := activeChat.ScrollToBottomAndAnimate(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 		}
@@ -702,7 +1113,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.copyChatHighlight())
 	case DelayedClickMsg:
 		// Handle delayed single-click action (e.g., expansion).
-		m.chat.HandleDelayedClick(msg)
+		if chat := m.activeChat(); chat != nil {
+			chat.HandleDelayedClick(msg)
+		}
 	case tea.MouseClickMsg:
 		// Pass mouse events to dialogs first if any are open.
 		if m.dialog.HasDialogs() {
@@ -716,12 +1129,16 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			chat, chatArea := m.chatAtPoint(msg.X, msg.Y)
+			if chat == nil {
+				break
+			}
 			x, y := msg.X, msg.Y
 			// Adjust for chat area position
-			x -= m.layout.main.Min.X
-			y -= m.layout.main.Min.Y
+			x -= chatArea.Min.X
+			y -= chatArea.Min.Y
 			if !image.Pt(msg.X, msg.Y).In(m.layout.sidebar) {
-				if handled, cmd := m.chat.HandleMouseDown(x, y); handled {
+				if handled, cmd := chat.HandleMouseDown(x, y); handled {
 					m.lastClickTime = time.Now()
 					if cmd != nil {
 						cmds = append(cmds, cmd)
@@ -739,23 +1156,27 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			chat, chatArea := m.chatAtPoint(msg.X, msg.Y)
+			if chat == nil {
+				break
+			}
 			if msg.Y <= 0 {
-				if cmd := m.chat.ScrollByAndAnimate(-1); cmd != nil {
+				if cmd := chat.ScrollByAndAnimate(-1); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					m.chat.SelectPrev()
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				if !chat.SelectedItemInView() {
+					chat.SelectPrev()
+					if cmd := chat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
-			} else if msg.Y >= m.chat.Height()-1 {
-				if cmd := m.chat.ScrollByAndAnimate(1); cmd != nil {
+			} else if msg.Y >= chat.Height()-1 {
+				if cmd := chat.ScrollByAndAnimate(1); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					m.chat.SelectNext()
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				if !chat.SelectedItemInView() {
+					chat.SelectNext()
+					if cmd := chat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
@@ -763,9 +1184,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			x, y := msg.X, msg.Y
 			// Adjust for chat area position
-			x -= m.layout.main.Min.X
-			y -= m.layout.main.Min.Y
-			m.chat.HandleMouseDrag(x, y)
+			x -= chatArea.Min.X
+			y -= chatArea.Min.Y
+			chat.HandleMouseDrag(x, y)
 		}
 
 	case tea.MouseReleaseMsg:
@@ -777,11 +1198,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			chat, chatArea := m.chatAtPoint(msg.X, msg.Y)
+			if chat == nil {
+				break
+			}
 			x, y := msg.X, msg.Y
 			// Adjust for chat area position
-			x -= m.layout.main.Min.X
-			y -= m.layout.main.Min.Y
-			if m.chat.HandleMouseUp(x, y) && m.chat.HasHighlight() {
+			x -= chatArea.Min.X
+			y -= chatArea.Min.Y
+			if chat.HandleMouseUp(x, y) && chat.HasHighlight() {
 				cmds = append(cmds, tea.Tick(doubleClickThreshold, func(t time.Time) tea.Msg {
 					if time.Since(m.lastClickTime) >= doubleClickThreshold {
 						return copyChatHighlightMsg{}
@@ -800,28 +1225,32 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Otherwise handle mouse wheel for chat.
 		switch m.state {
 		case uiChat:
+			chat, _ := m.chatAtPoint(msg.X, msg.Y)
+			if chat == nil {
+				break
+			}
 			switch msg.Button {
 			case tea.MouseWheelUp:
-				if cmd := m.chat.ScrollByAndAnimate(-MouseScrollThreshold); cmd != nil {
+				if cmd := chat.ScrollByAndAnimate(-MouseScrollThreshold); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					m.chat.SelectPrev()
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				if !chat.SelectedItemInView() {
+					chat.SelectPrev()
+					if cmd := chat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
 			case tea.MouseWheelDown:
-				if cmd := m.chat.ScrollByAndAnimate(MouseScrollThreshold); cmd != nil {
+				if cmd := chat.ScrollByAndAnimate(MouseScrollThreshold); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					if m.chat.AtBottom() {
-						m.chat.SelectLast()
+				if !chat.SelectedItemInView() {
+					if chat.AtBottom() {
+						chat.SelectLast()
 					} else {
-						m.chat.SelectNext()
+						chat.SelectNext()
 					}
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+					if cmd := chat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
@@ -829,11 +1258,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case anim.StepMsg:
 		if m.state == uiChat {
-			if cmd := m.chat.Animate(msg); cmd != nil {
+			activeChat := m.activeChat()
+			if activeChat == nil {
+				break
+			}
+			if cmd := activeChat.Animate(msg); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
-			if m.chat.Follow() {
-				if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+			if activeChat.Follow() {
+				if cmd := activeChat.ScrollToBottomAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			}
@@ -884,9 +1317,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, clearInfoMsgCmd(ttl))
 	case app.UpdateAvailableMsg:
-		text := fmt.Sprintf("Crush update available: v%s → v%s.", msg.CurrentVersion, msg.LatestVersion)
+		text := fmt.Sprintf("4rged update available: v%s → v%s.", msg.CurrentVersion, msg.LatestVersion)
 		if msg.IsDevelopment {
-			text = fmt.Sprintf("This is a development version of Crush. The latest version is v%s.", msg.LatestVersion)
+			text = fmt.Sprintf("This is a development version of 4rged. The latest version is v%s.", msg.LatestVersion)
 		}
 		ttl := 10 * time.Second
 		m.status.SetInfoMsg(util.InfoMsg{
@@ -920,13 +1353,14 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case uiFocusMain:
 	case uiFocusEditor:
 		// Textarea placeholder logic
+		activeTextarea := m.activeTextarea()
 		if m.isAgentBusy() {
-			m.textarea.Placeholder = m.workingPlaceholder
+			activeTextarea.Placeholder = m.workingPlaceholder
 		} else {
-			m.textarea.Placeholder = m.readyPlaceholder
+			activeTextarea.Placeholder = m.readyPlaceholder
 		}
 		if m.com.Workspace.PermissionSkipRequests() {
-			m.textarea.Placeholder = "Yolo mode!"
+			activeTextarea.Placeholder = "Yolo mode!"
 		}
 	}
 
@@ -938,7 +1372,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // setSessionMessages sets the messages for the current session in the chat
 func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
+	return m.setPaneSessionMessages(primaryPane, msgs)
+}
+
+func (m *UI) setPaneSessionMessages(paneID int, msgs []message.Message) tea.Cmd {
 	var cmds []tea.Cmd
+	pane := m.pane(paneID)
+	if pane == nil || pane.chat == nil {
+		return nil
+	}
 	// Build tool result map to link tool calls with their results
 	msgPtrs := make([]*message.Message, len(msgs))
 	for i := range msgs {
@@ -946,7 +1388,7 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 	}
 	toolResultMap := chat.BuildToolResultMap(msgPtrs)
 	if len(msgPtrs) > 0 {
-		m.lastUserMessageTime = msgPtrs[0].CreatedAt
+		pane.lastUserMessageTime = msgPtrs[0].CreatedAt
 	}
 
 	// Add messages to chat with linked tool results
@@ -954,12 +1396,12 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 	for _, msg := range msgPtrs {
 		switch msg.Role {
 		case message.User:
-			m.lastUserMessageTime = msg.CreatedAt
+			pane.lastUserMessageTime = msg.CreatedAt
 			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
 		case message.Assistant:
 			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
 			if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
-				infoItem := chat.NewAssistantInfoItem(m.com.Styles, msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
+				infoItem := chat.NewAssistantInfoItem(m.com.Styles, msg, m.com.Config(), time.Unix(pane.lastUserMessageTime, 0))
 				items = append(items, infoItem)
 			}
 		default:
@@ -980,11 +1422,12 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 		}
 	}
 
-	m.chat.SetMessages(items...)
-	if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+	pane.chat.SetMessages(items...)
+	if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	m.chat.SelectLast()
+	pane.chat.SelectLast()
+	m.commitPane(paneID, pane)
 	return tea.Sequence(cmds...)
 }
 
@@ -1049,9 +1492,17 @@ func (m *UI) loadNestedToolCalls(items []chat.MessageItem) {
 // appendSessionMessage appends a new message to the current session in the chat
 // if the message is a tool result it will update the corresponding tool call message
 func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
-	var cmds []tea.Cmd
+	return m.appendPaneSessionMessage(primaryPane, msg)
+}
 
-	existing := m.chat.MessageItem(msg.ID)
+func (m *UI) appendPaneSessionMessage(paneID int, msg message.Message) tea.Cmd {
+	var cmds []tea.Cmd
+	pane := m.pane(paneID)
+	if pane == nil || pane.chat == nil {
+		return nil
+	}
+
+	existing := pane.chat.MessageItem(msg.ID)
 	if existing != nil {
 		// message already exists, skip
 		return nil
@@ -1059,7 +1510,7 @@ func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
 
 	switch msg.Role {
 	case message.User:
-		m.lastUserMessageTime = msg.CreatedAt
+		pane.lastUserMessageTime = msg.CreatedAt
 		items := chat.ExtractMessageItems(m.com.Styles, &msg, nil)
 		for _, item := range items {
 			if animatable, ok := item.(chat.Animatable); ok {
@@ -1068,8 +1519,8 @@ func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
 				}
 			}
 		}
-		m.chat.AppendMessages(items...)
-		if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+		pane.chat.AppendMessages(items...)
+		if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case message.Assistant:
@@ -1081,57 +1532,51 @@ func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
 				}
 			}
 		}
-		m.chat.AppendMessages(items...)
-		if m.chat.Follow() {
-			if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+		pane.chat.AppendMessages(items...)
+		if pane.chat.Follow() {
+			if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 		}
 		if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
-			infoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-			m.chat.AppendMessages(infoItem)
-			if m.chat.Follow() {
-				if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+			infoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(pane.lastUserMessageTime, 0))
+			pane.chat.AppendMessages(infoItem)
+			if pane.chat.Follow() {
+				if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			}
 		}
 	case message.Tool:
 		for _, tr := range msg.ToolResults() {
-			toolItem := m.chat.MessageItem(tr.ToolCallID)
+			toolItem := pane.chat.MessageItem(tr.ToolCallID)
 			if toolItem == nil {
 				// we should have an item!
 				continue
 			}
 			if toolMsgItem, ok := toolItem.(chat.ToolMessageItem); ok {
 				toolMsgItem.SetResult(&tr)
-				if m.chat.Follow() {
-					if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+				if pane.chat.Follow() {
+					if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
 			}
 		}
 	}
+	m.commitPane(paneID, pane)
 	return tea.Sequence(cmds...)
 }
 
 func (m *UI) handleClickFocus(msg tea.MouseClickMsg) (cmd tea.Cmd) {
-	switch {
-	case m.state != uiChat:
+	if m.state != uiChat {
 		return nil
-	case image.Pt(msg.X, msg.Y).In(m.layout.sidebar):
-		return nil
-	case m.focus != uiFocusEditor && image.Pt(msg.X, msg.Y).In(m.layout.editor):
-		m.focus = uiFocusEditor
-		cmd = m.textarea.Focus()
-		m.chat.Blur()
-	case m.focus != uiFocusMain && image.Pt(msg.X, msg.Y).In(m.layout.main):
-		m.focus = uiFocusMain
-		m.textarea.Blur()
-		m.chat.Focus()
 	}
-	return cmd
+	paneID, focus, ok := m.paneTargetAtPoint(msg.X, msg.Y)
+	if !ok {
+		return nil
+	}
+	return m.focusPane(paneID, focus)
 }
 
 // updateSessionMessage updates an existing message in the current session in
@@ -1139,8 +1584,16 @@ func (m *UI) handleClickFocus(msg tea.MouseClickMsg) (cmd tea.Cmd) {
 // calls as well that is why we need to handle creating/updating each tool call
 // message too.
 func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
+	return m.updatePaneSessionMessage(primaryPane, msg)
+}
+
+func (m *UI) updatePaneSessionMessage(paneID int, msg message.Message) tea.Cmd {
 	var cmds []tea.Cmd
-	existingItem := m.chat.MessageItem(msg.ID)
+	pane := m.pane(paneID)
+	if pane == nil || pane.chat == nil {
+		return nil
+	}
+	existingItem := pane.chat.MessageItem(msg.ID)
 
 	if existingItem != nil {
 		if assistantItem, ok := existingItem.(*chat.AssistantMessageItem); ok {
@@ -1155,24 +1608,24 @@ func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
 	// renders so the footer (model/provider/duration) remains visible when,
 	// for example, a hook halts the turn.
 	if !shouldRenderAssistant && len(msg.ToolCalls()) > 0 && existingItem != nil {
-		m.chat.RemoveMessage(msg.ID)
+		pane.chat.RemoveMessage(msg.ID)
 		if !isEndTurn {
-			if infoItem := m.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem != nil {
-				m.chat.RemoveMessage(chat.AssistantInfoID(msg.ID))
+			if infoItem := pane.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem != nil {
+				pane.chat.RemoveMessage(chat.AssistantInfoID(msg.ID))
 			}
 		}
 	}
 
 	if isEndTurn {
-		if infoItem := m.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem == nil {
-			newInfoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-			m.chat.AppendMessages(newInfoItem)
+		if infoItem := pane.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem == nil {
+			newInfoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(pane.lastUserMessageTime, 0))
+			pane.chat.AppendMessages(newInfoItem)
 		}
 	}
 
 	var items []chat.MessageItem
 	for _, tc := range msg.ToolCalls() {
-		existingToolItem := m.chat.MessageItem(tc.ID)
+		existingToolItem := pane.chat.MessageItem(tc.ID)
 		if toolItem, ok := existingToolItem.(chat.ToolMessageItem); ok {
 			existingToolCall := toolItem.ToolCall()
 			// only update if finished state changed or input changed
@@ -1194,14 +1647,15 @@ func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
 		}
 	}
 
-	m.chat.AppendMessages(items...)
-	if m.chat.Follow() {
-		if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+	pane.chat.AppendMessages(items...)
+	if pane.chat.Follow() {
+		if cmd := pane.chat.ScrollToBottomAndAnimate(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		m.chat.SelectLast()
+		pane.chat.SelectLast()
 	}
 
+	m.commitPane(paneID, pane)
 	return tea.Sequence(cmds...)
 }
 
@@ -1317,6 +1771,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		if m.dialog.ContainsDialog(dialog.FilePickerID) {
 			defer fimage.ResetCache()
 		}
+		if m.dialog.ContainsDialog(dialog.SessionsID) {
+			m.splitSessionSelectionActive = false
+		}
 
 		m.dialog.CloseFrontDialog()
 
@@ -1337,6 +1794,16 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	// Session dialog messages.
 	case dialog.ActionSelectSession:
 		m.dialog.CloseDialog(dialog.SessionsID)
+		if m.splitSessionSelectionActive {
+			m.splitSessionSelectionActive = false
+			targetPane := m.splitSessionTargetPane
+			if m.splitTargetIsDuplicate(targetPane, msg.Session.ID) {
+				cmds = append(cmds, util.ReportWarn("That session is already open in the other pane"))
+				break
+			}
+			cmds = append(cmds, m.loadSessionIntoPane(targetPane, msg.Session.ID))
+			break
+		}
 		cmds = append(cmds, m.loadSession(msg.Session.ID))
 
 	// Open dialog message.
@@ -1377,6 +1844,18 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionSplitChat:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, m.openSplitChatDialog())
+	case dialog.ActionSplitChatNewSession:
+		m.dialog.CloseDialog(dialog.SplitChatID)
+		cmds = append(cmds, m.splitChatWithNewSession(m.splitSessionTargetPane))
+	case dialog.ActionSplitChatExistingSession:
+		m.dialog.CloseDialog(dialog.SplitChatID)
+		cmds = append(cmds, m.openSplitSessionsDialog())
+	case dialog.ActionCloseSplitPane:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, m.closeSplitPane(msg.PaneID))
 	case dialog.ActionSummarize:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
@@ -1433,25 +1912,21 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			return util.NewInfoMsg("Thinking mode " + status)
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
-	case dialog.ActionToggleTransparentBackground:
+	case dialog.ActionToggleTheme:
 		cmds = append(cmds, func() tea.Msg {
 			cfg := m.com.Config()
 			if cfg == nil {
 				return util.ReportError(errors.New("configuration not found"))()
 			}
 
-			isTransparent := cfg.Options != nil && cfg.Options.TUI.Transparent != nil && *cfg.Options.TUI.Transparent
-			newValue := !isTransparent
-			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.tui.transparent", newValue); err != nil {
+			newTheme := "light"
+			if cfg.Options != nil && cfg.Options.TUI.Theme == "light" {
+				newTheme = "dark"
+			}
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.tui.theme", newTheme); err != nil {
 				return util.ReportError(err)()
 			}
-			m.isTransparent = newValue
-
-			status := "disabled"
-			if newValue {
-				status = "enabled"
-			}
-			return util.NewInfoMsg("Transparent background " + status)
+			return themeChangedMsg{theme: newTheme}
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
@@ -1674,9 +2149,7 @@ func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
 		cmds = append(cmds, util.ReportError(err))
 	} else {
 		if msg.ModelType == config.SelectedModelTypeLarge {
-			// Swap the theme live based on the newly selected large
-			// model's provider.
-			m.applyTheme(styles.ThemeForProvider(providerID))
+			m.applyTheme(styles.ThemeForMode(cfg.Options.TUI.Theme))
 		}
 		if _, ok := cfg.Models[config.SelectedModelTypeSmall]; !ok {
 			// Ensure small model is set is unset.
@@ -1833,6 +2306,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 	case uiChat, uiLanding:
 		switch m.focus {
 		case uiFocusEditor:
+			activeTextarea := m.activeTextarea()
 			// Handle completions if open.
 			if m.completionsOpen {
 				if msg, ok := m.completions.Update(msg); ok {
@@ -1874,11 +2348,11 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				cmds = append(cmds, m.pasteImageFromClipboard)
 
 			case key.Matches(msg, m.keyMap.Editor.SendMessage):
-				prevHeight := m.textarea.Height()
-				value := m.textarea.Value()
+				prevHeight := activeTextarea.Height()
+				value := activeTextarea.Value()
 				if before, ok := strings.CutSuffix(value, "\\"); ok {
 					// If the last character is a backslash, remove it and add a newline.
-					m.textarea.SetValue(before)
+					activeTextarea.SetValue(before)
 					if cmd := m.handleTextareaHeightChange(prevHeight); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
@@ -1886,7 +2360,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 
 				// Otherwise, send the message
-				m.textarea.Reset()
+				activeTextarea.Reset()
 				if cmd := m.handleTextareaHeightChange(prevHeight); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
@@ -1905,7 +2379,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				m.randomizePlaceholders()
 				m.historyReset()
 
-				return tea.Batch(m.sendMessage(value, attachments...), m.loadPromptHistory())
+				return tea.Batch(m.sendMessageToPane(m.activePane, value, attachments...), m.loadPromptHistory())
 			case key.Matches(msg, m.keyMap.Chat.NewSession):
 				if !m.hasSession() {
 					break
@@ -1919,20 +2393,19 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 			case key.Matches(msg, m.keyMap.Tab):
 				if m.state != uiLanding {
-					m.setState(m.state, uiFocusMain)
-					m.textarea.Blur()
-					m.chat.Focus()
-					m.chat.SetSelected(m.chat.Len() - 1)
+					if cmd := m.focusNextPaneTarget(); cmd != nil {
+						cmds = append(cmds, cmd)
+					}
 				}
 			case key.Matches(msg, m.keyMap.Editor.OpenEditor):
 				if m.isAgentBusy() {
 					cmds = append(cmds, util.ReportWarn("Agent is working, please wait..."))
 					break
 				}
-				cmds = append(cmds, m.openEditor(m.textarea.Value()))
+				cmds = append(cmds, m.openEditor(activeTextarea.Value()))
 			case key.Matches(msg, m.keyMap.Editor.Newline):
-				prevHeight := m.textarea.Height()
-				m.textarea.InsertRune('\n')
+				prevHeight := activeTextarea.Height()
+				activeTextarea.InsertRune('\n')
 				m.closeCompletions()
 				cmds = append(cmds, m.updateTextareaWithPrevHeight(msg, prevHeight))
 			case key.Matches(msg, m.keyMap.Editor.HistoryPrev):
@@ -1950,7 +2423,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				if cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-			case key.Matches(msg, m.keyMap.Editor.Commands) && m.textarea.Value() == "":
+			case key.Matches(msg, m.keyMap.Editor.Commands) && activeTextarea.Value() == "":
 				if cmd := m.openCommandsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
@@ -1961,7 +2434,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 
 				// Check for @ trigger before passing to textarea.
-				curValue := m.textarea.Value()
+				curValue := activeTextarea.Value()
 				curIdx := len(curValue)
 
 				// Trigger completions on @.
@@ -1983,7 +2456,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					m.updateLayoutAndSize()
 				}
 
-				prevHeight := m.textarea.Height()
+				prevHeight := activeTextarea.Height()
 				cmds = append(cmds, m.updateTextareaWithPrevHeight(msg, prevHeight))
 
 				// Any text modification becomes the current draft.
@@ -1992,7 +2465,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				// After updating textarea, check if we need to filter completions.
 				// Skip filtering on the initial @ keystroke since items are loading async.
 				if m.completionsOpen && msg.String() != "@" {
-					newValue := m.textarea.Value()
+					newValue := activeTextarea.Value()
 					newIdx := len(newValue)
 
 					// Close completions if cursor moved before start.
@@ -2014,11 +2487,15 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 			}
 		case uiFocusMain:
+			activeChat := m.activeChat()
+			if activeChat == nil {
+				break
+			}
 			switch {
 			case key.Matches(msg, m.keyMap.Tab):
-				m.focus = uiFocusEditor
-				cmds = append(cmds, m.textarea.Focus())
-				m.chat.Blur()
+				if cmd := m.focusNextPaneTarget(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			case key.Matches(msg, m.keyMap.Chat.NewSession):
 				if !m.hasSession() {
 					break
@@ -2027,74 +2504,74 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
 					break
 				}
-				m.focus = uiFocusEditor
+				cmds = append(cmds, m.focusPane(m.activePane, uiFocusEditor))
 				if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Chat.Expand):
-				m.chat.ToggleExpandedSelectedItem()
+				activeChat.ToggleExpandedSelectedItem()
 			case key.Matches(msg, m.keyMap.Chat.Up):
-				if cmd := m.chat.ScrollByAndAnimate(-1); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(-1); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					m.chat.SelectPrev()
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				if !activeChat.SelectedItemInView() {
+					activeChat.SelectPrev()
+					if cmd := activeChat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
 			case key.Matches(msg, m.keyMap.Chat.Down):
-				if cmd := m.chat.ScrollByAndAnimate(1); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(1); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				if !m.chat.SelectedItemInView() {
-					m.chat.SelectNext()
-					if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				if !activeChat.SelectedItemInView() {
+					activeChat.SelectNext()
+					if cmd := activeChat.ScrollToSelectedAndAnimate(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
 				}
 			case key.Matches(msg, m.keyMap.Chat.UpOneItem):
-				m.chat.SelectPrev()
-				if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				activeChat.SelectPrev()
+				if cmd := activeChat.ScrollToSelectedAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Chat.DownOneItem):
-				m.chat.SelectNext()
-				if cmd := m.chat.ScrollToSelectedAndAnimate(); cmd != nil {
+				activeChat.SelectNext()
+				if cmd := activeChat.ScrollToSelectedAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Chat.HalfPageUp):
-				if cmd := m.chat.ScrollByAndAnimate(-m.chat.Height() / 2); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(-activeChat.Height() / 2); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectFirstInView()
+				activeChat.SelectFirstInView()
 			case key.Matches(msg, m.keyMap.Chat.HalfPageDown):
-				if cmd := m.chat.ScrollByAndAnimate(m.chat.Height() / 2); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(activeChat.Height() / 2); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectLastInView()
+				activeChat.SelectLastInView()
 			case key.Matches(msg, m.keyMap.Chat.PageUp):
-				if cmd := m.chat.ScrollByAndAnimate(-m.chat.Height()); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(-activeChat.Height()); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectFirstInView()
+				activeChat.SelectFirstInView()
 			case key.Matches(msg, m.keyMap.Chat.PageDown):
-				if cmd := m.chat.ScrollByAndAnimate(m.chat.Height()); cmd != nil {
+				if cmd := activeChat.ScrollByAndAnimate(activeChat.Height()); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectLastInView()
+				activeChat.SelectLastInView()
 			case key.Matches(msg, m.keyMap.Chat.Home):
-				if cmd := m.chat.ScrollToTopAndAnimate(); cmd != nil {
+				if cmd := activeChat.ScrollToTopAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectFirst()
+				activeChat.SelectFirst()
 			case key.Matches(msg, m.keyMap.Chat.End):
-				if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
+				if cmd := activeChat.ScrollToBottomAndAnimate(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-				m.chat.SelectLast()
+				activeChat.SelectLast()
 			default:
-				if ok, cmd := m.chat.HandleKeyMsg(msg); ok {
+				if ok, cmd := activeChat.HandleKeyMsg(msg); ok {
 					cmds = append(cmds, cmd)
 				} else {
 					handleGlobalKeys(msg)
@@ -2112,10 +2589,14 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 
 // drawHeader draws the header section of the UI.
 func (m *UI) drawHeader(scr uv.Screen, area uv.Rectangle) {
+	activeSession := m.session
+	if m.state == uiChat {
+		activeSession = m.activeSidebarPane().session
+	}
 	m.header.drawHeader(
 		scr,
 		area,
-		m.session,
+		activeSession,
 		m.isCompact,
 		m.detailsOpen,
 		area.Dx(),
@@ -2163,17 +2644,27 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 			m.drawSidebar(scr, layout.sidebar)
 		}
 
-		m.chat.Draw(scr, layout.main)
-		if layout.pills.Dy() > 0 && m.pillsView != "" {
-			uv.NewStyledString(m.pillsView).Draw(scr, layout.pills)
-		}
+		if m.splitMode && m.secondaryPane != nil {
+			m.chat.Draw(scr, layout.main)
+			m.secondaryPane.chat.Draw(scr, layout.secondaryMain)
 
-		editorWidth := scr.Bounds().Dx()
-		if !m.isCompact {
-			editorWidth -= layout.sidebar.Dx()
+			editor := uv.NewStyledString(m.renderPaneEditorView(layout.editor.Dx(), &m.textarea, true))
+			editor.Draw(scr, layout.editor)
+			secondaryEditor := uv.NewStyledString(m.renderPaneEditorView(layout.secondaryEditor.Dx(), &m.secondaryPane.textarea, false))
+			secondaryEditor.Draw(scr, layout.secondaryEditor)
+		} else {
+			m.chat.Draw(scr, layout.main)
+			if layout.pills.Dy() > 0 && m.pillsView != "" {
+				uv.NewStyledString(m.pillsView).Draw(scr, layout.pills)
+			}
+
+			editorWidth := scr.Bounds().Dx()
+			if !m.isCompact {
+				editorWidth -= layout.sidebar.Dx()
+			}
+			editor := uv.NewStyledString(m.renderEditorView(editorWidth))
+			editor.Draw(scr, layout.editor)
 		}
-		editor := uv.NewStyledString(m.renderEditorView(editorWidth))
-		editor.Draw(scr, layout.editor)
 
 		// Draw details overlay in compact mode when open
 		if m.isCompact && m.detailsOpen {
@@ -2208,7 +2699,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	}
 
 	// Debugging rendering (visually see when the tui rerenders)
-	if os.Getenv("CRUSH_UI_DEBUG") == "true" {
+	if os.Getenv("F4RGED_UI_DEBUG") == "true" {
 		debugView := lipgloss.NewStyle().Background(lipgloss.ANSIColor(rand.Intn(256))).Width(4).Height(2)
 		debug := uv.NewStyledString(debugView.String())
 		debug.Draw(scr, image.Rectangle{
@@ -2226,7 +2717,13 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	switch m.focus {
 	case uiFocusEditor:
-		if m.layout.editor.Dy() <= 0 {
+		editorRect := m.layout.editor
+		activeTextarea := &m.textarea
+		if m.activePane == secondaryPane && m.secondaryPane != nil {
+			editorRect = m.layout.secondaryEditor
+			activeTextarea = &m.secondaryPane.textarea
+		}
+		if editorRect.Dy() <= 0 {
 			// Don't show cursor if editor is not visible
 			return nil
 		}
@@ -2235,10 +2732,16 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 			return nil
 		}
 
-		if m.textarea.Focused() {
-			cur := m.textarea.Cursor()
-			cur.X++                            // Adjust for app margins
-			cur.Y += m.layout.editor.Min.Y + 1 // Offset for attachments row
+		if activeTextarea.Focused() {
+			cur := activeTextarea.Cursor()
+			frame := m.com.Styles.Editor.Frame
+			cur.X += editorRect.Min.X +
+				frame.GetBorderLeftSize() +
+				frame.GetPaddingLeft()
+			cur.Y += editorRect.Min.Y +
+				1 + // Offset for the reserved attachments row.
+				frame.GetBorderTopSize() +
+				frame.GetPaddingTop()
 			return cur
 		}
 	}
@@ -2254,7 +2757,7 @@ func (m *UI) View() tea.View {
 	}
 	v.MouseMode = tea.MouseModeCellMotion
 	v.ReportFocus = m.caps.ReportFocusEvents
-	v.WindowTitle = "crush " + home.Short(m.com.Workspace.WorkingDir())
+	v.WindowTitle = "4rged " + home.Short(m.com.Workspace.WorkingDir())
 
 	canvas := uv.NewScreenBuffer(m.width, m.height)
 	v.Cursor = m.Draw(canvas, canvas.Bounds())
@@ -2555,12 +3058,13 @@ func (m *UI) updateLayoutAndSize() {
 // the view scrolled to the bottom. The returned command, if non-nil, must be
 // batched by the caller.
 func (m *UI) handleTextareaHeightChange(prevHeight int) tea.Cmd {
-	if m.textarea.Height() == prevHeight {
+	if m.activeTextarea().Height() == prevHeight {
 		return nil
 	}
 	m.updateLayoutAndSize()
-	if m.state == uiChat && m.chat.Follow() {
-		return m.chat.ScrollToBottomAndAnimate()
+	chat := m.activeChat()
+	if m.state == uiChat && chat != nil && chat.Follow() {
+		return chat.ScrollToBottomAndAnimate()
 	}
 	return nil
 }
@@ -2568,7 +3072,7 @@ func (m *UI) handleTextareaHeightChange(prevHeight int) tea.Cmd {
 // updateTextarea updates the textarea for msg and then reconciles layout if
 // the textarea height changed as a result.
 func (m *UI) updateTextarea(msg tea.Msg) tea.Cmd {
-	return m.updateTextareaWithPrevHeight(msg, m.textarea.Height())
+	return m.updateTextareaWithPrevHeight(msg, m.activeTextarea().Height())
 }
 
 // updateTextareaWithPrevHeight is for cases when the height of the layout may
@@ -2580,8 +3084,9 @@ func (m *UI) updateTextarea(msg tea.Msg) tea.Cmd {
 // "before" vs "after" sizing and recalculate the layout if the textarea grew
 // or shrank.
 func (m *UI) updateTextareaWithPrevHeight(msg tea.Msg, prevHeight int) tea.Cmd {
-	ta, cmd := m.textarea.Update(msg)
-	m.textarea = ta
+	ta := m.activeTextarea()
+	updated, cmd := ta.Update(msg)
+	*ta = updated
 	return tea.Batch(cmd, m.handleTextareaHeightChange(prevHeight))
 }
 
@@ -2592,7 +3097,12 @@ func (m *UI) updateSize() {
 
 	m.chat.SetSize(m.layout.main.Dx(), m.layout.main.Dy())
 	m.textarea.MaxHeight = TextareaMaxHeight
-	m.textarea.SetWidth(m.layout.editor.Dx())
+	m.textarea.SetWidth(m.editorTextareaWidth(m.layout.editor.Dx()))
+	if m.secondaryPane != nil {
+		m.secondaryPane.chat.SetSize(m.layout.secondaryMain.Dx(), m.layout.secondaryMain.Dy())
+		m.secondaryPane.textarea.MaxHeight = TextareaMaxHeight
+		m.secondaryPane.textarea.SetWidth(m.editorTextareaWidth(m.layout.secondaryEditor.Dx()))
+	}
 	m.renderPills()
 
 	// Handle different app states
@@ -2647,6 +3157,38 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	uiLayout := uiLayout{
 		area:   area,
 		status: helpRect,
+	}
+	assignSplitLayout := func(mainRect image.Rectangle) {
+		gap := 1
+		leftWidth := max(1, (mainRect.Dx()-gap)/2)
+		var leftRect, rightRect image.Rectangle
+		layout.Horizontal(
+			layout.Len(leftWidth),
+			layout.Fill(1),
+		).Split(mainRect).Assign(&leftRect, &rightRect)
+		rightRect.Min.X += gap
+
+		var leftMain, leftEditor image.Rectangle
+		layout.Vertical(
+			layout.Len(leftRect.Dy()-editorHeight),
+			layout.Fill(1),
+		).Split(leftRect).Assign(&leftMain, &leftEditor)
+		leftMain.Max.X -= 1
+		leftMain.Max.Y -= 1
+
+		var rightMain, rightEditor image.Rectangle
+		secondaryEditorHeight := m.secondaryPane.textarea.Height() + editorHeightMargin
+		layout.Vertical(
+			layout.Len(rightRect.Dy()-secondaryEditorHeight),
+			layout.Fill(1),
+		).Split(rightRect).Assign(&rightMain, &rightEditor)
+		rightMain.Max.X -= 1
+		rightMain.Max.Y -= 1
+
+		uiLayout.main = leftMain
+		uiLayout.editor = leftEditor
+		uiLayout.secondaryMain = rightMain
+		uiLayout.secondaryEditor = rightEditor
 	}
 
 	// Handle different app states
@@ -2722,13 +3264,17 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 			uiLayout.sessionDetails.Min.Y += compactHeaderHeight // adjust for header
 			// Add one line gap between header and main content
 			mainRect.Min.Y += 1
+			uiLayout.header = headerRect
+			if m.splitMode && m.secondaryPane != nil {
+				assignSplitLayout(mainRect)
+				break
+			}
 			var editorRect image.Rectangle
 			layout.Vertical(
 				layout.Len(mainRect.Dy()-editorHeight),
 				layout.Fill(1),
 			).Split(mainRect).Assign(&mainRect, &editorRect)
-			mainRect.Max.X -= 1 // Add padding right
-			uiLayout.header = headerRect
+			mainRect.Max.X -= 2 // Match the chat message left inset before the sidebar.
 			pillsHeight := m.pillsAreaHeight()
 			if pillsHeight > 0 {
 				pillsHeight = min(pillsHeight, mainRect.Dy())
@@ -2762,13 +3308,17 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 			).Split(appRect).Assign(&mainRect, &sideRect)
 			// Add padding left
 			sideRect.Min.X += 1
+			uiLayout.sidebar = sideRect
+			if m.splitMode && m.secondaryPane != nil {
+				assignSplitLayout(mainRect)
+				break
+			}
 			var editorRect image.Rectangle
 			layout.Vertical(
 				layout.Len(mainRect.Dy()-editorHeight),
 				layout.Fill(1),
 			).Split(mainRect).Assign(&mainRect, &editorRect)
 			mainRect.Max.X -= 1 // Add padding right
-			uiLayout.sidebar = sideRect
 			pillsHeight := m.pillsAreaHeight()
 			if pillsHeight > 0 {
 				pillsHeight = min(pillsHeight, mainRect.Dy())
@@ -2811,6 +3361,11 @@ type uiLayout struct {
 	// editor is the area for the editor pane.
 	editor uv.Rectangle
 
+	// secondaryMain and secondaryEditor are the right-side chat and editor
+	// areas used in split-chat mode.
+	secondaryMain   uv.Rectangle
+	secondaryEditor uv.Rectangle
+
 	// sidebar is the area for the sidebar.
 	sidebar uv.Rectangle
 
@@ -2832,7 +3387,7 @@ func (m *UI) openEditor(value string) tea.Cmd {
 		return util.ReportError(err)
 	}
 	cmd, err := editor.Command(
-		"crush",
+		"4rged",
 		tmpPath,
 		editor.AtPosition(
 			m.textarea.Line()+1,
@@ -2879,9 +3434,9 @@ func (m *UI) normalPromptFunc(info textarea.PromptInfo) string {
 	t := m.com.Styles
 	if info.LineNumber == 0 {
 		if info.Focused {
-			return "  > "
+			return t.Editor.PromptNormalFocused.Render()
 		}
-		return "::: "
+		return t.Editor.PromptNormalBlurred.Render()
 	}
 	if info.Focused {
 		return t.Editor.PromptNormalFocused.Render()
@@ -3096,15 +3651,26 @@ func (m *UI) randomizePlaceholders() {
 
 // renderEditorView renders the editor view with attachments if any.
 func (m *UI) renderEditorView(width int) string {
+	return m.renderPaneEditorView(width, &m.textarea, true)
+}
+
+func (m *UI) renderPaneEditorView(width int, ta *textarea.Model, includeAttachments bool) string {
 	var attachmentsView string
-	if len(m.attachments.List()) > 0 {
+	if includeAttachments && len(m.attachments.List()) > 0 {
 		attachmentsView = m.attachments.Render(width)
 	}
+	frame := m.com.Styles.Editor.Frame.Width(max(1, width-m.com.Styles.Editor.Frame.GetHorizontalFrameSize()))
+	ta.SetWidth(m.editorTextareaWidth(width))
 	return strings.Join([]string{
 		attachmentsView,
-		m.textarea.View(),
+		frame.Render(ta.View()),
 		"", // margin at bottom of editor
 	}, "\n")
+}
+
+func (m *UI) editorTextareaWidth(width int) int {
+	frameWidth := m.com.Styles.Editor.Frame.GetHorizontalFrameSize()
+	return max(1, width-frameWidth-1)
 }
 
 // cacheSidebarLogo renders and caches the sidebar logo at the specified width.
@@ -3140,16 +3706,28 @@ func (m *UI) refreshStyles() {
 	m.todoSpinner.Style = t.Pills.TodoSpinner
 	m.status.help.Styles = t.Help
 	m.chat.InvalidateRenderCaches()
+	if m.secondaryPane != nil {
+		m.secondaryPane.textarea.SetStyles(t.Editor.Textarea)
+		m.secondaryPane.chat.InvalidateRenderCaches()
+	}
 }
 
 // sendMessage sends a message with the given content and attachments.
 func (m *UI) sendMessage(content string, attachments ...message.Attachment) tea.Cmd {
+	return m.sendMessageToPane(primaryPane, content, attachments...)
+}
+
+func (m *UI) sendMessageToPane(paneID int, content string, attachments ...message.Attachment) tea.Cmd {
 	if !m.com.Workspace.AgentIsReady() {
 		return util.ReportError(fmt.Errorf("coder agent is not initialized"))
 	}
 
 	var cmds []tea.Cmd
-	if !m.hasSession() {
+	pane := m.pane(paneID)
+	if pane == nil {
+		return nil
+	}
+	if pane.session == nil || pane.session.ID == "" {
 		newSession, err := m.com.Workspace.CreateSession(context.Background(), "New Session")
 		if err != nil {
 			return util.ReportError(err)
@@ -3158,23 +3736,35 @@ func (m *UI) sendMessage(content string, attachments ...message.Attachment) tea.
 			m.isCompact = true
 		}
 		if newSession.ID != "" {
-			m.session = &newSession
-			cmds = append(cmds, m.loadSession(newSession.ID))
+			pane.session = &newSession
+			m.commitPane(paneID, pane)
+			if m.splitMode {
+				cmds = append(cmds, m.loadSessionIntoPane(paneID, newSession.ID))
+			} else {
+				cmds = append(cmds, m.loadSession(newSession.ID))
+			}
+		}
+		if !m.splitMode && m.forceCompactMode {
+			m.isCompact = true
 		}
 		m.setState(uiChat, m.focus)
+	}
+	pane = m.pane(paneID)
+	if pane == nil || pane.session == nil {
+		return tea.Batch(cmds...)
 	}
 
 	ctx := context.Background()
 	cmds = append(cmds, func() tea.Msg {
 		for _, path := range m.sessionFileReads {
-			m.com.Workspace.FileTrackerRecordRead(ctx, m.session.ID, path)
+			m.com.Workspace.FileTrackerRecordRead(ctx, pane.session.ID, path)
 			m.com.Workspace.LSPStart(ctx, path)
 		}
 		return nil
 	})
 
-	// Capture session ID to avoid race with main goroutine updating m.session.
-	sessionID := m.session.ID
+	// Capture session ID to avoid race with main goroutine updating the active pane.
+	sessionID := pane.session.ID
 	cmds = append(cmds, func() tea.Msg {
 		err := m.com.Workspace.AgentRun(context.Background(), sessionID, content, attachments...)
 		if err != nil {
@@ -3317,7 +3907,7 @@ func (m *UI) openCommandsDialog() tea.Cmd {
 	hasTodos := hasSession && hasIncompleteTodos(m.session.Todos)
 	hasQueue := m.promptQueue > 0
 
-	commands, err := dialog.NewCommands(m.com, sessionID, hasSession, hasTodos, hasQueue, m.customCommands, m.mcpPrompts)
+	commands, err := dialog.NewCommands(m.com, sessionID, hasSession, m.splitMode && m.secondaryPane != nil, hasTodos, hasQueue, m.customCommands, m.mcpPrompts)
 	if err != nil {
 		return util.ReportError(err)
 	}
@@ -3354,7 +3944,9 @@ func (m *UI) openSessionsDialog() tea.Cmd {
 	}
 
 	selectedSessionID := ""
-	if m.session != nil {
+	if m.splitSessionSelectionActive {
+		selectedSessionID = m.paneSessionID(m.splitSessionTargetPane)
+	} else if m.session != nil {
 		selectedSessionID = m.session.ID
 	}
 
@@ -3421,7 +4013,7 @@ func (m *UI) handleAgentNotification(n notify.Notification) tea.Cmd {
 	case notify.TypeAgentFinished:
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.sendNotification(notification.Notification{
-			Title:   "Crush is waiting...",
+			Title:   "4rged is waiting...",
 			Message: fmt.Sprintf("Agent's turn completed in \"%s\"", n.SessionTitle),
 		}))
 		if m.com.IsHyper() {
@@ -3690,7 +4282,8 @@ func (m *UI) pasteIdx() int {
 
 // drawSessionDetails draws the session details in compact mode.
 func (m *UI) drawSessionDetails(scr uv.Screen, area uv.Rectangle) {
-	if m.session == nil {
+	activePane := m.activeSidebarPane()
+	if activePane == nil || activePane.session == nil {
 		return
 	}
 
@@ -3699,7 +4292,7 @@ func (m *UI) drawSessionDetails(scr uv.Screen, area uv.Rectangle) {
 	width := area.Dx() - s.CompactDetails.View.GetHorizontalFrameSize()
 	height := area.Dy() - s.CompactDetails.View.GetVerticalFrameSize()
 
-	title := s.CompactDetails.Title.Width(width).MaxHeight(2).Render(m.session.Title)
+	title := s.CompactDetails.Title.Width(width).MaxHeight(2).Render(activePane.session.Title)
 	blocks := []string{
 		title,
 		"",
@@ -3825,13 +4418,13 @@ func (m *UI) disableDockerMCP() tea.Msg {
 	return util.NewInfoMsg("Docker MCP disabled successfully")
 }
 
-// renderLogo renders the Crush logo with the given styles and dimensions.
+// renderLogo renders the 4RGED logo with the given styles and dimensions.
 func renderLogo(t *styles.Styles, compact, hyper bool, width int) string {
 	return logo.Render(t.Logo.GradCanvas, version.Version, compact, logo.Opts{
 		FieldColor:   t.Logo.FieldColor,
 		TitleColorA:  t.Logo.TitleColorA,
 		TitleColorB:  t.Logo.TitleColorB,
-		CharmColor:   t.Logo.CharmColor,
+		BrandColor:   t.Logo.BrandColor,
 		VersionColor: t.Logo.VersionColor,
 		Width:        width,
 		Hyper:        hyper,

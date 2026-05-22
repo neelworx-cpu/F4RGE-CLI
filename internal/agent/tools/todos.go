@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
 )
 
 //go:embed todos.md

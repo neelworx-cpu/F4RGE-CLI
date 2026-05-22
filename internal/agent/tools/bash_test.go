@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/shell"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/shell"
 	"github.com/stretchr/testify/require"
 )
 

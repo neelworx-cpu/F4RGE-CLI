@@ -3,8 +3,8 @@ package dialog
 import (
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 

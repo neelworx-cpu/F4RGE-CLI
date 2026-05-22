@@ -1,5 +1,5 @@
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "lsp": {
     "gopls": {
       "options": {

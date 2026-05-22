@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 const (
@@ -46,16 +46,11 @@ func newHeader(com *common.Common) *header {
 func (h *header) refresh() {
 	t := h.com.Styles
 	isHyper := h.com.IsHyper()
-	charm := "Charm™"
-	if !isHyper {
-		charm = " " + charm
-	}
-	name := "CRUSH"
+	name := "F4RGED"
 	if isHyper {
-		name = "HYPERCRUSH"
+		name = "HYPER 4RGED"
 	}
-	h.compactLogo = t.Header.Charm.Render(charm) + " " +
-		styles.ApplyBoldForegroundGrad(t.Header.LogoGradCanvas, name, t.Header.LogoGradFromColor, t.Header.LogoGradToColor) + " "
+	h.compactLogo = t.Header.Brand.Render(name) + " "
 	// Force drawHeader to re-render the wide logo on the next frame.
 	h.width = 0
 	h.logo = ""

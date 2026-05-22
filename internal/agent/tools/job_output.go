@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/shell"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/shell"
 )
 
 const (

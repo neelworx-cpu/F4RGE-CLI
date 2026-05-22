@@ -6,21 +6,21 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
-	"github.com/charmbracelet/crush/internal/projects"
 	"github.com/charmbracelet/x/term"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/projects"
 	"github.com/spf13/cobra"
 )
 
 var projectsCmd = &cobra.Command{
 	Use:   "projects",
 	Short: "List project directories",
-	Long:  "List directories where Crush project data is known to exist",
+	Long:  "List directories where F4rged project data is known to exist",
 	Example: `
 # List all projects in a table
-crush projects
+f4rged projects
 
 # Output projects data as JSON
-crush projects --json
+f4rged projects --json
   `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jsonOutput, _ := cmd.Flags().GetBool("json")

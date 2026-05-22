@@ -68,14 +68,14 @@ When user asks to create git commit:
    Commit message here.
 
 {{ if .Attribution.GeneratedWith }}
-   💘 Generated with Crush
+   💘 Generated with 4RGED
 {{ end}}
 {{if eq .Attribution.TrailerStyle "assisted-by" }}
 
-   Assisted-by: Crush:{{ .ModelID }}
+   Assisted-by: 4RGED:{{ .ModelID }}
 {{ else if eq .Attribution.TrailerStyle "co-authored-by" }}
 
-   Co-Authored-By: Crush <crush@charm.land>
+   Co-Authored-By: 4RGED <4rged@4rged.app>
 {{ end }}
 
    EOF
@@ -127,7 +127,7 @@ Use gh command for ALL GitHub tasks. When user asks to create PR:
    [Checklist of TODOs...]
 
 {{ if .Attribution.GeneratedWith}}
-   💘 Generated with Crush
+   💘 Generated with 4RGED
 {{ end }}
 
    EOF

@@ -12,11 +12,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/filepathext"
-	"github.com/charmbracelet/crush/internal/home"
-	"github.com/charmbracelet/crush/internal/shell"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filepathext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/home"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/shell"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 )
 
 // Prompt represents a template-based prompt generator.

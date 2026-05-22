@@ -8,9 +8,9 @@ import (
 	"os/signal"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/client"
-	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/client"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -23,17 +23,17 @@ var (
 var logoutCmd = &cobra.Command{
 	Aliases: []string{"signout"},
 	Use:     "logout [platform]",
-	Short:   "Logout Crush from a platform",
-	Long: `Logout Crush from a specified platform, removing stored credentials.
+	Short:   "Logout 4rged from a platform",
+	Long: `Logout 4rged from a specified platform, removing stored credentials.
 The platform should be provided as an argument.
 If no argument is given, a list of logged-in platforms will be shown.
 Available platforms are: hyper, copilot.`,
 	Example: `
 # Sign out from Charm Hyper
-crush logout hyper
+f4rged logout hyper
 
 # Sign out from GitHub Copilot
-crush logout copilot
+f4rged logout copilot
   `,
 	ValidArgs: []cobra.Completion{
 		"hyper",

@@ -8,15 +8,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/oauth"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/skills"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/util"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/commands"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/util"
 )
 
 // ActionClose is a message to close the current dialog.
@@ -35,6 +35,12 @@ type ActionSelectSession struct {
 	Session session.Session
 }
 
+// ActionSelectSessionForSplit is a message indicating a session has been
+// selected as the secondary split-chat pane.
+type ActionSelectSessionForSplit struct {
+	Session session.Session
+}
+
 // ActionSelectModel is a message indicating a model has been selected.
 type ActionSelectModel struct {
 	Provider       catwalk.Provider
@@ -45,17 +51,23 @@ type ActionSelectModel struct {
 
 // Messages for commands
 type (
-	ActionNewSession                  struct{}
-	ActionToggleHelp                  struct{}
-	ActionToggleCompactMode           struct{}
-	ActionToggleThinking              struct{}
-	ActionTogglePills                 struct{}
-	ActionExternalEditor              struct{}
-	ActionToggleYoloMode              struct{}
-	ActionToggleNotifications         struct{}
-	ActionToggleTransparentBackground struct{}
-	ActionInitializeProject           struct{}
-	ActionSummarize                   struct {
+	ActionNewSession               struct{}
+	ActionToggleHelp               struct{}
+	ActionToggleCompactMode        struct{}
+	ActionToggleThinking           struct{}
+	ActionTogglePills              struct{}
+	ActionExternalEditor           struct{}
+	ActionToggleYoloMode           struct{}
+	ActionToggleNotifications      struct{}
+	ActionToggleTheme              struct{}
+	ActionInitializeProject        struct{}
+	ActionSplitChat                struct{}
+	ActionSplitChatNewSession      struct{}
+	ActionSplitChatExistingSession struct{}
+	ActionCloseSplitPane           struct {
+		PaneID int
+	}
+	ActionSummarize struct {
 		SessionID string
 	}
 	// ActionSelectReasoningEffort is a message indicating a reasoning effort

@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/charmbracelet/crush/internal/agent/prompt"
-	"github.com/charmbracelet/crush/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/prompt"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 )
 
 //go:embed templates/coder.md.tpl

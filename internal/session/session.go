@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/event"
-	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/google/uuid"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/db"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
 	"github.com/zeebo/xxh3"
 )
 

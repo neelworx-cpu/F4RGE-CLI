@@ -17,23 +17,23 @@ import (
 	"charm.land/fantasy"
 )
 
-const CrushLogsToolName = "crush_logs"
+const F4rgedLogsToolName = "f4rged_logs"
 
-//go:embed crush_logs.md.tpl
-var crushLogsDescriptionTmpl []byte
+//go:embed f4rged_logs.md.tpl
+var f4rgedLogsDescriptionTmpl []byte
 
-var crushLogsDescriptionTpl = template.Must(
-	template.New("crushLogsDescription").
-		Parse(string(crushLogsDescriptionTmpl)),
+var f4rgedLogsDescriptionTpl = template.Must(
+	template.New("f4rgedLogsDescription").
+		Parse(string(f4rgedLogsDescriptionTmpl)),
 )
 
-type crushLogsDescriptionData struct {
+type f4rgedLogsDescriptionData struct {
 	DefaultLines int
 	MaxLines     int
 }
 
-func crushLogsDescription() string {
-	return renderTemplate(crushLogsDescriptionTpl, crushLogsDescriptionData{
+func f4rgedLogsDescription() string {
+	return renderTemplate(f4rgedLogsDescriptionTpl, f4rgedLogsDescriptionData{
 		DefaultLines: defaultLogLines,
 		MaxLines:     maxLogLines,
 	})
@@ -69,23 +69,23 @@ var sensitiveKeys = []string{
 	"credential",
 }
 
-type CrushLogsParams struct {
+type F4rgedLogsParams struct {
 	Lines int `json:"lines,omitempty" description:"Number of recent log entries to return (default 50, max 100)"`
 }
 
-func NewCrushLogsTool(logFile string) fantasy.AgentTool {
+func NewF4rgedLogsTool(logFile string) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
-		CrushLogsToolName,
-		crushLogsDescription(),
-		func(ctx context.Context, params CrushLogsParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			result := runCrushLogs(logFile, params)
+		F4rgedLogsToolName,
+		f4rgedLogsDescription(),
+		func(ctx context.Context, params F4rgedLogsParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			result := runF4rgedLogs(logFile, params)
 			return fantasy.NewTextResponse(result), nil
 		},
 	)
 }
 
-// runCrushLogs reads and formats the last N log entries from the given file.
-func runCrushLogs(logFile string, params CrushLogsParams) string {
+// runF4rgedLogs reads and formats the last N log entries from the given file.
+func runF4rgedLogs(logFile string, params F4rgedLogsParams) string {
 	// Validate and clamp the lines parameter.
 	lines := params.Lines
 	if lines <= 0 {

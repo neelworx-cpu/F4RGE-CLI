@@ -10,12 +10,12 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "Charm",
-            "url": "https://charm.sh"
+            "name": "F4RGE",
+            "url": "https://4rged.app"
         },
         "license": {
             "name": "MIT",
-            "url": "https://github.com/charmbracelet/crush/blob/main/LICENSE"
+            "url": "https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE"
         },
         "version": "{{.Version}}"
     },
@@ -1825,7 +1825,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_charmbracelet_crush_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message"
                             }
                         }
                     },
@@ -2519,7 +2519,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_charmbracelet_crush_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message"
                             }
                         }
                     },
@@ -2569,7 +2569,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_charmbracelet_crush_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message"
                             }
                         }
                     },
@@ -2836,17 +2836,6 @@ const docTemplate = `{
                 }
             }
         },
-        "config.Scope": {
-            "type": "integer",
-            "enum": [
-                0,
-                1
-            ],
-            "x-enum-varnames": [
-                "ScopeGlobal",
-                "ScopeWorkspace"
-            ]
-        },
         "config.SelectedModel": {
             "type": "object",
             "properties": {
@@ -2966,7 +2955,7 @@ const docTemplate = `{
         "csync.Map-string-config_ProviderConfig": {
             "type": "object"
         },
-        "github_com_charmbracelet_crush_internal_config.Config": {
+        "github_com_neelworx-cpu_F4RGE-CLI_internal_config.Config": {
             "type": "object",
             "properties": {
                 "$schema": {
@@ -2995,7 +2984,7 @@ const docTemplate = `{
                     }
                 },
                 "options": {
-                    "$ref": "#/definitions/github_com_charmbracelet_crush_internal_config.Options"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Options"
                 },
                 "permissions": {
                     "$ref": "#/definitions/config.Permissions"
@@ -3023,7 +3012,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_charmbracelet_crush_internal_config.Options": {
+        "github_com_neelworx-cpu_F4RGE-CLI_internal_config.Options": {
             "type": "object",
             "properties": {
                 "attribution": {
@@ -3039,7 +3028,7 @@ const docTemplate = `{
                     }
                 },
                 "data_directory": {
-                    "description": "DataDirectory is where Crush keeps per-project state such as\nthe SQLite database and workspace overrides. Relative paths are\nresolved against the working directory; absolute paths are used\nverbatim. After defaulting the stored value is always absolute.",
+                    "description": "DataDirectory is where F4rged keeps per-project state such as\nthe SQLite database and workspace overrides. Relative paths are\nresolved against the working directory; absolute paths are used\nverbatim. After defaulting the stored value is always absolute.",
                     "type": "string"
                 },
                 "debug": {
@@ -3092,7 +3081,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_charmbracelet_crush_internal_proto.Message": {
+        "github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "ScopeGlobal",
+                "ScopeWorkspace"
+            ]
+        },
+        "github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3219,6 +3219,12 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "todos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.Todo"
+                    }
+                },
                 "updated_at": {
                     "type": "integer"
                 }
@@ -3251,7 +3257,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 }
             }
         },
@@ -3265,7 +3271,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/config.SelectedModelType"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 }
             }
         },
@@ -3285,7 +3291,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 }
             }
         },
@@ -3296,7 +3302,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 }
             }
         },
@@ -3307,7 +3313,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 }
             }
         },
@@ -3318,7 +3324,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope"
                 },
                 "value": {}
             }
@@ -3614,8 +3620,56 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "todos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.Todo"
+                    }
+                },
                 "updated_at": {
                     "type": "integer"
+                }
+            }
+        },
+        "proto.SkillDiscoveryState": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "SkillStateNormal",
+                "SkillStateError"
+            ]
+        },
+        "proto.SkillState": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/definitions/proto.SkillDiscoveryState"
+                }
+            }
+        },
+        "proto.Todo": {
+            "type": "object",
+            "properties": {
+                "active_form": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -3643,7 +3697,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/github_com_charmbracelet_crush_internal_config.Config"
+                    "$ref": "#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Config"
                 },
                 "data_dir": {
                     "type": "string"
@@ -3662,6 +3716,13 @@ const docTemplate = `{
                 },
                 "path": {
                     "type": "string"
+                },
+                "skills": {
+                    "description": "Skills carries the snapshot of skill discovery state at workspace\ncreation time. Subsequent updates flow through the SSE event\nstream.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.SkillState"
+                    }
                 },
                 "version": {
                     "type": "string"
@@ -3704,8 +3765,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/v1",
 	Schemes:          []string{},
-	Title:            "Crush API",
-	Description:      "Crush is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.",
+	Title:            "4rged API",
+	Description:      "4rged is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

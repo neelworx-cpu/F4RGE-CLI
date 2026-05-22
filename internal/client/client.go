@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/proto"
-	"github.com/charmbracelet/crush/internal/server"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/server"
 )
 
 // DummyHost is used to satisfy the http.Client's requirement for a URL.
-const DummyHost = "api.crush.localhost"
+const DummyHost = "api.4rged.localhost"
 
-// Client represents an RPC client connected to a Crush server.
+// Client represents an RPC client connected to a 4rged server.
 type Client struct {
 	h       *http.Client
 	path    string

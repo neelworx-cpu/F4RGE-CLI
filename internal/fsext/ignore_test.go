@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCrushIgnore(t *testing.T) {
+func TestF4rgedIgnore(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
@@ -17,8 +17,8 @@ func TestCrushIgnore(t *testing.T) {
 	require.NoError(t, os.WriteFile("test2.log", []byte("test"), 0o644))
 	require.NoError(t, os.WriteFile("test3.tmp", []byte("test"), 0o644))
 
-	// Create a .crushignore file that ignores .log files
-	require.NoError(t, os.WriteFile(".crushignore", []byte("*.log\n"), 0o644))
+	// Create a .4rgedignore file that ignores .log files
+	require.NoError(t, os.WriteFile(".4rgedignore", []byte("*.log\n"), 0o644))
 
 	dl := NewDirectoryLister(tempDir)
 	require.True(t, dl.shouldIgnore("test2.log", nil, false), ".log files should be ignored")
@@ -50,16 +50,16 @@ func TestShouldExcludeFile(t *testing.T) {
 		t.Fatalf("Failed to create .gitignore: %v", err)
 	}
 
-	// Create .crushignore file
-	crushignoreContent := "custom_ignored/\n"
-	if err := os.WriteFile(filepath.Join(tempDir, ".crushignore"), []byte(crushignoreContent), 0o644); err != nil {
-		t.Fatalf("Failed to create .crushignore: %v", err)
+	// Create .4rgedignore file
+	f4rgedignoreContent := "custom_ignored/\n"
+	if err := os.WriteFile(filepath.Join(tempDir, ".4rgedignore"), []byte(f4rgedignoreContent), 0o644); err != nil {
+		t.Fatalf("Failed to create .4rgedignore: %v", err)
 	}
 
 	// Test that ignored directories are properly ignored
 	require.True(t, ShouldExcludeFile(tempDir, nodeModules), "Expected node_modules to be ignored by .gitignore")
 	require.True(t, ShouldExcludeFile(tempDir, target), "Expected target to be ignored by .gitignore")
-	require.True(t, ShouldExcludeFile(tempDir, customIgnored), "Expected custom_ignored to be ignored by .crushignore")
+	require.True(t, ShouldExcludeFile(tempDir, customIgnored), "Expected custom_ignored to be ignored by .4rgedignore")
 
 	// Test that normal directories are not ignored
 	require.False(t, ShouldExcludeFile(tempDir, normalDir), "Expected src directory to not be ignored")
@@ -84,14 +84,14 @@ func TestShouldExcludeFileHierarchical(t *testing.T) {
 		}
 	}
 
-	// Create .crushignore in subdir that ignores normal_nested
-	subCrushignore := "normal_nested/\n"
-	if err := os.WriteFile(filepath.Join(subDir, ".crushignore"), []byte(subCrushignore), 0o644); err != nil {
-		t.Fatalf("Failed to create subdir .crushignore: %v", err)
+	// Create .4rgedignore in subdir that ignores normal_nested
+	subF4rgedignore := "normal_nested/\n"
+	if err := os.WriteFile(filepath.Join(subDir, ".4rgedignore"), []byte(subF4rgedignore), 0o644); err != nil {
+		t.Fatalf("Failed to create subdir .4rgedignore: %v", err)
 	}
 
-	// Test hierarchical ignore behavior - this should work because the .crushignore is in the parent directory
-	require.True(t, ShouldExcludeFile(tempDir, nestedNormal), "Expected normal_nested to be ignored by subdir .crushignore")
+	// Test hierarchical ignore behavior - this should work because the .4rgedignore is in the parent directory
+	require.True(t, ShouldExcludeFile(tempDir, nestedNormal), "Expected normal_nested to be ignored by subdir .4rgedignore")
 	require.False(t, ShouldExcludeFile(tempDir, subDir), "Expected subdir itself to not be ignored")
 }
 

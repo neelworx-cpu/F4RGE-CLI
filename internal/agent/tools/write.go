@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/diff"
-	"github.com/charmbracelet/crush/internal/filepathext"
-	"github.com/charmbracelet/crush/internal/filetracker"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/history"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/diff"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filepathext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
 
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
 )
 
 //go:embed write.md

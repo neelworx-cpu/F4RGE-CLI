@@ -3,7 +3,7 @@ package notification_test
 import (
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/ui/notification"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/notification"
 	"github.com/stretchr/testify/require"
 )
 

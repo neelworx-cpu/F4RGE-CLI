@@ -10,11 +10,11 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/ui/list"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/ordered"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
 )
 
 const (

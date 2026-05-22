@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 	"github.com/stretchr/testify/require"
 )
@@ -61,7 +61,7 @@ func equivMatch(seed fuzzy.Match) fuzzy.Match {
 func TestCommandItem_MutatorsBumpVersion(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	item := NewCommandItem(&sty, "id", "Title", "ctrl+t", nil)
 
 	requireBump(t, "SetFocused[true]", item, func() {
@@ -101,7 +101,7 @@ func TestCommandItem_MutatorsBumpVersion(t *testing.T) {
 func TestModelItem_MutatorsBumpVersion(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	prov := catwalk.Provider{ID: "openai", Name: "OpenAI"}
 	model := catwalk.Model{ID: "gpt-4", Name: "GPT-4"}
 	item := NewModelItem(&sty, prov, model, ModelTypeLarge, true)
@@ -140,7 +140,7 @@ func TestModelItem_MutatorsBumpVersion(t *testing.T) {
 func TestSessionItem_MutatorsBumpVersion(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	item := &SessionItem{
 		Versioned: list.NewVersioned(),
 		Session:   session.Session{ID: "sess-1", Title: "My Session"},
@@ -181,7 +181,7 @@ func TestSessionItem_MutatorsBumpVersion(t *testing.T) {
 func TestReasoningItem_MutatorsBumpVersion(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 	item := &ReasoningItem{
 		Versioned: list.NewVersioned(),
 		effort:    "medium",

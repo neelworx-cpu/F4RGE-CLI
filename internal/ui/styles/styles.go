@@ -13,7 +13,7 @@ import (
 	"charm.land/glamour/v2/ansi"
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
-	"github.com/charmbracelet/crush/internal/ui/diffview"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/diffview"
 )
 
 const (
@@ -61,7 +61,7 @@ const (
 type Styles struct {
 	// Header
 	Header struct {
-		Charm             lipgloss.Style // Style for "Charm™" label
+		Brand             lipgloss.Style // Style for the 4RGED brand label
 		Diagonals         lipgloss.Style // Style for diagonal separators (╱)
 		Percentage        lipgloss.Style // Style for context percentage
 		Hypercredit       lipgloss.Style // Style for Hypercredit count (◆ N)
@@ -70,9 +70,9 @@ type Styles struct {
 		WorkingDir        lipgloss.Style // Style for current working directory
 		Separator         lipgloss.Style // Style for separator dots (•)
 		Wrapper           lipgloss.Style // Outer container for the entire header row
-		LogoGradCanvas    lipgloss.Style // Canvas for the compact "CRUSH" gradient
-		LogoGradFromColor color.Color    // "CRUSH" wordmark gradient start
-		LogoGradToColor   color.Color    // "CRUSH" wordmark gradient end
+		LogoGradCanvas    lipgloss.Style // Canvas for the compact "F4RGED" gradient
+		LogoGradFromColor color.Color    // "F4RGED" wordmark gradient start
+		LogoGradToColor   color.Color    // "F4RGED" wordmark gradient end
 	}
 
 	CompactDetails struct {
@@ -112,6 +112,7 @@ type Styles struct {
 	// Editor
 	Editor struct {
 		Textarea textarea.Styles
+		Frame    lipgloss.Style
 
 		// Normal mode prompt (default "::: ").
 		PromptNormalFocused lipgloss.Style
@@ -139,13 +140,13 @@ type Styles struct {
 		FieldColor         color.Color
 		TitleColorA        color.Color
 		TitleColorB        color.Color
-		CharmColor         color.Color
+		BrandColor         color.Color
 		VersionColor       color.Color
-		SmallCharm         lipgloss.Style // "Charm™" label in SmallRender
+		SmallBrand         lipgloss.Style // 4RGED brand label in SmallRender
 		SmallDiagonals     lipgloss.Style // Diagonal line fill in SmallRender
 		GradCanvas         lipgloss.Style // Blank canvas for gradient painting
-		SmallGradFromColor color.Color    // Small "Crush" wordmark gradient start
-		SmallGradToColor   color.Color    // Small "Crush" wordmark gradient end
+		SmallGradFromColor color.Color    // Small "4RGED" wordmark gradient start
+		SmallGradToColor   color.Color    // Small "4RGED" wordmark gradient end
 	}
 
 	// Working indicator gradient (spinners/shimmers on assistant "thinking",

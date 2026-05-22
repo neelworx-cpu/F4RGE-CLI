@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/csync"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/csync"
 )
 
 type Tool = mcp.Tool

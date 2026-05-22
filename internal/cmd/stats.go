@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/db"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )

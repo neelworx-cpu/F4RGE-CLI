@@ -3,8 +3,8 @@
 
 "area: ci":
   - "/^ci: /i"
-"area: crush run":
-  - "/crush run/i"
+"area: 4rged run":
+  - "/4rged run/i"
   - "/headless/i"
   - "/non-interactive/i"
 "area: diff":

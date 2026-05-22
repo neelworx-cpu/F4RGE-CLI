@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
-	crushlog "github.com/charmbracelet/crush/internal/log"
-	"github.com/charmbracelet/crush/internal/server"
 	"github.com/charmbracelet/x/term"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	f4rgedlog "github.com/neelworx-cpu/F4RGE-CLI/internal/log"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/server"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ func init() {
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Start the Crush server",
+	Short: "Start the 4rged server",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		dataDir, err := cmd.Flags().GetString("data-dir")
 		if err != nil {
@@ -47,17 +47,17 @@ var serverCmd = &cobra.Command{
 			return fmt.Errorf("invalid server host: %v", err)
 		}
 
-		logFile := filepath.Join(config.GlobalCacheDir(), "server-"+safeHostName(hostURL), "crush.log")
+		logFile := filepath.Join(config.GlobalCacheDir(), "server-"+safeHostName(hostURL), "4rged.log")
 
 		if term.IsTerminal(os.Stderr.Fd()) {
-			crushlog.Setup(logFile, debug, os.Stderr)
+			f4rgedlog.Setup(logFile, debug, os.Stderr)
 		} else {
-			crushlog.Setup(logFile, debug)
+			f4rgedlog.Setup(logFile, debug)
 		}
 
 		srv := server.NewServer(cfg, hostURL.Scheme, hostURL.Host)
 		srv.SetLogger(slog.Default())
-		slog.Info("Starting Crush server...", "addr", serverHost)
+		slog.Info("Starting 4rged server...", "addr", serverHost)
 
 		errch := make(chan error, 1)
 		sigch := make(chan os.Signal, 1)

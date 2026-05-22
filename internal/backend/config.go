@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/charmbracelet/crush/internal/agent"
-	mcptools "github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/oauth"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent"
+	mcptools "github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/commands"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/oauth"
 )
 
 // MCPResourceContents holds the contents of an MCP resource returned

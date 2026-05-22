@@ -3,11 +3,11 @@ package dialog
 import (
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/list"
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 
@@ -123,13 +123,13 @@ func (m *ModelItem) Render(width int) string {
 	if m.showProvider {
 		providerInfo = string(m.prov.Name)
 	}
-	styles := ListItemStyles{
+	itemStyles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,
 		ItemFocused:     m.t.Dialog.SelectedItem,
 		InfoTextBlurred: m.t.Dialog.ListItem.InfoBlurred,
 		InfoTextFocused: m.t.Dialog.ListItem.InfoFocused,
 	}
-	return renderItem(styles, m.model.Name, providerInfo, m.focused, width, m.cache, &m.m)
+	return renderItem(itemStyles, m.model.Name, providerInfo, m.focused, width, m.cache, &m.m)
 }
 
 // SetFocused implements ListItem.

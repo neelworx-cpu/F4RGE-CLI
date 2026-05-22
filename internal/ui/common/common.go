@@ -7,11 +7,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/ui/styles"
-	"github.com/charmbracelet/crush/internal/ui/util"
-	"github.com/charmbracelet/crush/internal/workspace"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/util"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/workspace"
 )
 
 // MaxAttachmentSize defines the maximum allowed size for file attachments (5 MB).

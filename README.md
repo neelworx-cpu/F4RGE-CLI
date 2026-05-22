@@ -1,187 +1,57 @@
-# Crush
+# 4RGED
 
 <p align="center">
-    <a href="https://stuff.charm.sh/crush/charm-crush.png"><img width="450" alt="Charm Crush Logo" src="https://github.com/user-attachments/assets/cf8ca3ce-8b02-43f0-9d0f-5a331488da4b" /></a><br />
-    <a href="https://github.com/charmbracelet/crush/releases"><img src="https://img.shields.io/github/release/charmbracelet/crush" alt="Latest Release"></a>
-    <a href="https://github.com/charmbracelet/crush/actions"><img src="https://github.com/charmbracelet/crush/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
+    <strong>4RGED</strong><br />
+    <a href="https://github.com/neelworx-cpu/F4RGE-CLI/releases"><img src="https://img.shields.io/github/release/neelworx-cpu/F4RGE-CLI" alt="Latest Release"></a>
+    <a href="https://github.com/neelworx-cpu/F4RGE-CLI/actions"><img src="https://github.com/neelworx-cpu/F4RGE-CLI/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
 </p>
 
 <p align="center">Your new coding bestie, now available in your favourite terminal.<br />Your tools, your code, and your workflows, wired into your LLM of choice.</p>
 <p align="center">终端里的编程新搭档，<br />无缝接入你的工具、代码与工作流，全面兼容主流 LLM 模型。</p>
 
-<p align="center"><img width="800" alt="Crush Demo" src="https://github.com/user-attachments/assets/58280caf-851b-470a-b6f7-d5c4ea8a1968" /></p>
+<p align="center"><img width="800" alt="4RGED Demo" src="https://github.com/user-attachments/assets/58280caf-851b-470a-b6f7-d5c4ea8a1968" /></p>
 
 ## Features
 
 - **Multi-Model:** choose from a wide range of LLMs or add your own via OpenAI- or Anthropic-compatible APIs
 - **Flexible:** switch LLMs mid-session while preserving context
 - **Session-Based:** maintain multiple work sessions and contexts per project
-- **LSP-Enhanced:** Crush uses LSPs for additional context, just like you do
+- **LSP-Enhanced:** 4RGED uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Works Everywhere:** first-class support in every terminal on macOS, Linux, Windows (PowerShell and WSL), Android, FreeBSD, OpenBSD, and NetBSD
-- **Industrial Grade:** built on the Charm ecosystem, powering 25k+ applications, from leading open source projects to business-critical infrastructure
+- **Industrial Grade:** built on proven terminal UI foundations and tuned for F4RGE agentic workflows
 
 ## Installation
 
-Use a package manager:
+Install 4RGED with the F4RGE install script:
 
 ```bash
-# Homebrew
-brew install charmbracelet/tap/crush
-
-# NPM
-npm install -g @charmland/crush
-
-# Arch Linux (btw)
-yay -S crush-bin
-
-# Nix
-nix run github:numtide/nix-ai-tools#crush
-
-# FreeBSD
-pkg install crush
+curl -fsSL https://4rged.app/cli | sh
 ```
 
-Windows users:
+Or download a packaged release:
 
-```bash
-# Winget
-winget install charmbracelet.crush
-
-# Scoop
-scoop bucket add charm https://github.com/charmbracelet/scoop-bucket.git
-scoop install crush
-```
-
-<details>
-<summary><strong>Nix (NUR)</strong></summary>
-
-Crush is available via the official Charm [NUR](https://github.com/nix-community/NUR) in `nur.repos.charmbracelet.crush`, which is the most up-to-date way to get Crush in Nix.
-
-You can also try out Crush via the NUR with `nix-shell`:
-
-```bash
-# Add the NUR channel.
-nix-channel --add https://github.com/nix-community/NUR/archive/main.tar.gz nur
-nix-channel --update
-
-# Get Crush in a Nix shell.
-nix-shell -p '(import <nur> { pkgs = import <nixpkgs> {}; }).repos.charmbracelet.crush'
-```
-
-### NixOS & Home Manager Module Usage via NUR
-
-Crush provides NixOS and Home Manager modules via NUR.
-You can use these modules directly in your flake by importing them from NUR. Since it auto detects whether its a home manager or nixos context you can use the import the exact same way :)
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nur.url = "github:nix-community/NUR";
-  };
-
-  outputs = { self, nixpkgs, nur, ... }: {
-    nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        nur.modules.nixos.default
-        nur.repos.charmbracelet.modules.crush
-        {
-          programs.crush = {
-            enable = true;
-            settings = {
-              providers = {
-                openai = {
-                  id = "openai";
-                  name = "OpenAI";
-                  base_url = "https://api.openai.com/v1";
-                  type = "openai";
-                  api_key = "sk-fake123456789abcdef...";
-                  models = [
-                    {
-                      id = "gpt-4";
-                      name = "GPT-4";
-                    }
-                  ];
-                };
-              };
-              lsp = {
-                go = { command = "gopls"; enabled = true; };
-                nix = { command = "nil"; enabled = true; };
-              };
-              options = {
-                context_paths = [ "/etc/nixos/configuration.nix" ];
-                tui = { compact_mode = true; };
-                debug = false;
-              };
-            };
-          };
-        }
-      ];
-    };
-  };
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Debian/Ubuntu</strong></summary>
-
-```bash
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-sudo apt update && sudo apt install crush
-```
-
-</details>
-
-<details>
-<summary><strong>Fedora/RHEL</strong></summary>
-
-```bash
-echo '[charm]
-name=Charm
-baseurl=https://repo.charm.sh/yum/
-enabled=1
-gpgcheck=1
-gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
-sudo yum install crush
-```
-
-</details>
-
-Or, download it:
-
-- [Packages][releases] are available in Debian and RPM formats
+- [Packages][releases] are available in Debian and RPM formats once releases are published
 - [Binaries][releases] are available for Linux, macOS, Windows, FreeBSD, OpenBSD, and NetBSD
 
-[releases]: https://github.com/charmbracelet/crush/releases
+[releases]: https://github.com/neelworx-cpu/F4RGE-CLI/releases
 
-Or just install it with Go:
-
-```
-go install github.com/charmbracelet/crush@latest
-```
 
 > [!WARNING]
-> Productivity may increase when using Crush and you may find yourself nerd
-> sniped when first using the application. If the symptoms persist, join the
-> [Slack][slack] or [Discord][discord] and nerd snipe the rest of us.
+> Productivity may increase when using 4RGED and you may find yourself nerd
+> sniped when first using the application.
 
 ## Getting Started
 
 The quickest way to get started is to grab an API key for your preferred
 provider such as Anthropic, OpenAI, Groq, OpenRouter, or Vercel AI Gateway and just start
-Crush. You'll be prompted to enter your API key.
+4RGED. You'll be prompted to enter your API key.
 
 That said, you can also set environment variables for preferred providers.
 
 | Environment Variable        | Provider                                           |
 | --------------------------- | -------------------------------------------------- |
-| `HYPER_API_KEY`             | Charm Hyper                                        |
+| `HYPER_API_KEY`             | F4RGE Hyper                                        |
 | `ANTHROPIC_API_KEY`         | Anthropic                                          |
 | `OPENAI_API_KEY`            | OpenAI                                             |
 | `VERCEL_API_KEY`            | Vercel AI Gateway                                  |
@@ -211,7 +81,7 @@ That said, you can also set environment variables for preferred providers.
 ### Subscriptions
 
 If you prefer subscription-based usage, here are some plans that work well in
-Crush:
+4RGED:
 
 - [Synthetic](https://synthetic.new/pricing)
 - [GLM Coding Plan](https://z.ai/subscribe)
@@ -220,25 +90,25 @@ Crush:
 
 ### By the Way
 
-Is there a provider you’d like to see in Crush? Is there an existing model that needs an update?
+Is there a provider you’d like to see in 4RGED? Is there an existing model that needs an update?
 
-Crush’s default model listing is managed in [Catwalk](https://github.com/charmbracelet/catwalk), a community-supported, open source repository of Crush-compatible models, and you’re welcome to contribute.
+4RGED’s default model listing is managed in [Catwalk](https://github.com/charmbracelet/catwalk), a community-supported, open source repository of 4RGED-compatible models, and you’re welcome to contribute.
 
 <a href="https://github.com/charmbracelet/catwalk"><img width="174" height="174" alt="Catwalk Badge" src="https://github.com/user-attachments/assets/95b49515-fe82-4409-b10d-5beb0873787d" /></a>
 
 ## Configuration
 
 > [!TIP]
-> Crush ships with a builtin `crush-config` skill for configuring itself. In
-> many cases you can simply ask Crush to configure itself.
+> 4RGED ships with a builtin `4rged-config` skill for configuring itself. In
+> many cases you can simply ask 4RGED to configure itself.
 
-Crush runs great with no configuration. That said, if you do need or want to
-customize Crush, configuration can be added either local to the project itself,
+4RGED runs great with no configuration. That said, if you do need or want to
+customize 4RGED, configuration can be added either local to the project itself,
 or globally, with the following priority:
 
-1. `.crush.json`
-2. `crush.json`
-3. `$HOME/.config/crush/crush.json`
+1. `.4rged.json`
+2. `4rged.json`
+3. `$HOME/.config/4rged/4rged.json`
 
 Configuration itself is stored as a JSON object:
 
@@ -249,31 +119,31 @@ Configuration itself is stored as a JSON object:
 }
 ```
 
-As an additional note, Crush also stores ephemeral data, such as application
+As an additional note, 4RGED also stores ephemeral data, such as application
 state, in one additional location:
 
 ```bash
 # Unix
-$HOME/.local/share/crush/crush.json
+$HOME/.local/share/4rged/4rged.json
 
 # Windows
-%LOCALAPPDATA%\crush\crush.json
+%LOCALAPPDATA%\4rged\4rged.json
 ```
 
 > [!TIP]
 > You can override the user and data config locations by setting:
 >
-> - `CRUSH_GLOBAL_CONFIG`
-> - `CRUSH_GLOBAL_DATA`
+> - `F4RGED_GLOBAL_CONFIG`
+> - `F4RGED_GLOBAL_DATA`
 
 ### LSPs
 
-Crush can use LSPs for additional context to help inform its decisions, just
+4RGED can use LSPs for additional context to help inform its decisions, just
 like you would. LSPs can be added manually like so:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "lsp": {
     "go": {
       "command": "gopls",
@@ -294,14 +164,14 @@ like you would. LSPs can be added manually like so:
 
 ### MCPs
 
-Crush also supports Model Context Protocol (MCP) servers through three transport
+4RGED also supports Model Context Protocol (MCP) servers through three transport
 types: `stdio` for command-line servers, `http` for HTTP endpoints, and `sse`
 for Server-Sent Events.
 
 Shell-style value expansion (`$VAR`, `${VAR:-default}`, `$(command)`, quoting,
 nesting) works in `command`, `args`, `env`, `headers`, and `url`, so
 file-based secrets work out of the box. You can use values like `"$TOKEN"`
-or `"$(cat /path/to/secret/token)"`. Expansion runs through Crush's embedded
+or `"$(cat /path/to/secret/token)"`. Expansion runs through 4RGED's embedded
 shell, so the same syntax works on every supported system, Windows included.
 
 Unset variables expand to the empty string by default, matching bash. For
@@ -321,13 +191,13 @@ Provider `extra_body` is a non-expanding JSON passthrough; put env-driven
 values in `extra_headers` or the provider's `api_key` / `base_url`, all of
 which do expand.
 
-> **Security note:** `crush.json` is trusted code. Any `$(...)` in it runs at
+> **Security note:** `4rged.json` is trusted code. Any `$(...)` in it runs at
 > load time with your shell's privileges, before the UI appears. Don't launch
-> Crush in a directory whose `crush.json` you haven't reviewed.
+> 4RGED in a directory whose `4rged.json` you haven't reviewed.
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "mcp": {
     "filesystem": {
       "type": "stdio",
@@ -365,28 +235,28 @@ which do expand.
 
 ### Hooks
 
-Crush has preliminary support for hooks. For details, see
+4RGED has preliminary support for hooks. For details, see
 [the hook guide](./docs/hooks/).
 
 ### Ignoring Files
 
-Crush respects `.gitignore` files by default, but you can also create a
-`.crushignore` file to specify additional files and directories that Crush
+4RGED respects `.gitignore` files by default, but you can also create a
+`.4rgedignore` file to specify additional files and directories that 4RGED
 should ignore. This is useful for excluding files that you want in version
-control but don't want Crush to consider when providing context.
+control but don't want 4RGED to consider when providing context.
 
-The `.crushignore` file uses the same syntax as `.gitignore` and can be placed
+The `.4rgedignore` file uses the same syntax as `.gitignore` and can be placed
 in the root of your project or in subdirectories.
 
 ### Allowing Tools
 
-By default, Crush will ask you for permission before running tool calls. If
+By default, 4RGED will ask you for permission before running tool calls. If
 you'd like, you can allow tools to be executed without prompting you for
 permissions. Use this with care.
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "permissions": {
     "allowed_tools": [
       "view",
@@ -399,18 +269,18 @@ permissions. Use this with care.
 }
 ```
 
-You can also skip all permission prompts entirely by running Crush with the
+You can also skip all permission prompts entirely by running 4RGED with the
 `--yolo` flag. Be very, very careful with this feature.
 
 ### Disabling Built-In Tools
 
-If you'd like to prevent Crush from using certain built-in tools entirely, you
+If you'd like to prevent 4RGED from using certain built-in tools entirely, you
 can disable them via the `options.disabled_tools` list. Disabled tools are
 completely hidden from the agent.
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "disabled_tools": ["bash", "sourcegraph"]
   }
@@ -421,52 +291,52 @@ To disable tools from MCP servers, see the [MCP config section](#mcps).
 
 ### Disabling Skills
 
-If you'd like to prevent Crush from using certain skills entirely, you can
+If you'd like to prevent 4RGED from using certain skills entirely, you can
 disable them via the `options.disabled_skills` list. Disabled skills are hidden
 from the agent, including builtin skills and skills discovered from disk.
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
-    "disabled_skills": ["crush-config"]
+    "disabled_skills": ["4rged-config"]
   }
 }
 ```
 
 ### Agent Skills
 
-Crush supports the [Agent Skills](https://agentskills.io) open standard for
+4RGED supports the [Agent Skills](https://agentskills.io) open standard for
 extending agent capabilities with reusable skill packages. Skills are folders
-containing a `SKILL.md` file with instructions that Crush can discover and
+containing a `SKILL.md` file with instructions that 4RGED can discover and
 activate on demand.
 
 The global paths we looks for skills are:
 
-* `$CRUSH_SKILLS_DIR`
+* `$F4RGED_SKILLS_DIR`
 * `$XDG_CONFIG_HOME/agents/skills` or `~/.config/agents/skills/`
-* `$XDG_CONFIG_HOME/crush/skills` or `~/.config/crush/skills/`
+* `$XDG_CONFIG_HOME/4rged/skills` or `~/.config/4rged/skills/`
 * `~/.agents/skills/`
 * `~/.claude/skills/`
 * On Windows, we _also_ look at
   * `%LOCALAPPDATA%\agents\skills\` or `%USERPROFILE%\AppData\Local\agents\skills\`
-  * `%LOCALAPPDATA%\crush\skills\` or `%USERPROFILE%\AppData\Local\crush\skills\`
+  * `%LOCALAPPDATA%\4rged\skills\` or `%USERPROFILE%\AppData\Local\4rged\skills\`
 * Additional paths configured via `options.skills_paths`
 
 On top of that, we _also_ load skills in your project from the following
 relative paths:
 
 * `.agents/skills`
-* `.crush/skills`
+* `.4rged/skills`
 * `.claude/skills`
 * `.cursor/skills`
 
 ```jsonc
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "skills_paths": [
-      "~/.config/crush/skills", // Windows: "%LOCALAPPDATA%\\crush\\skills",
+      "~/.config/4rged/skills", // Windows: "%LOCALAPPDATA%\\4rged\\skills",
       "./project-skills",
     ],
   },
@@ -477,16 +347,16 @@ You can get started with example skills from [anthropics/skills](https://github.
 
 ```bash
 # Unix
-mkdir -p ~/.config/crush/skills
-cd ~/.config/crush/skills
+mkdir -p ~/.config/4rged/skills
+cd ~/.config/4rged/skills
 git clone https://github.com/anthropics/skills.git _temp
 mv _temp/skills/* . && rm -rf _temp
 ```
 
 ```powershell
 # Windows (PowerShell)
-mkdir -Force "$env:LOCALAPPDATA\crush\skills"
-cd "$env:LOCALAPPDATA\crush\skills"
+mkdir -Force "$env:LOCALAPPDATA\4rged\skills"
+cd "$env:LOCALAPPDATA\4rged\skills"
 git clone https://github.com/anthropics/skills.git _temp
 mv _temp/skills/* . ; rm -r -force _temp
 ```
@@ -524,13 +394,13 @@ Skills with `disable-model-invocation` won't appear in the model's available ski
 
 ### Desktop notifications
 
-Crush sends desktop notifications when a tool call requires permission and when
+4RGED sends desktop notifications when a tool call requires permission and when
 the agent finishes its turn. They're only sent when the terminal window isn't
 focused _and_ your terminal supports reporting the focus state.
 
 ```jsonc
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "disable_notifications": false, // default
   },
@@ -543,14 +413,14 @@ limitations.
 
 ### Initialization
 
-When you initialize a project, Crush analyzes your codebase and creates
+When you initialize a project, 4RGED analyzes your codebase and creates
 a context file that helps it work more effectively in future sessions.
 By default, this file is named `AGENTS.md`, but you can customize the
 name and location with the `initialize_as` option:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "initialize_as": "AGENTS.md"
   }
@@ -558,19 +428,19 @@ name and location with the `initialize_as` option:
 ```
 
 This is useful if you prefer a different naming convention or want to
-place the file in a specific directory (e.g., `CRUSH.md` or
-`docs/LLMs.md`). Crush will fill the file with project-specific context
+place the file in a specific directory (e.g., `4RGED.md` or
+`docs/LLMs.md`). 4RGED will fill the file with project-specific context
 like build commands, code patterns, and conventions it discovered during
 initialization.
 
 ### Attribution Settings
 
-By default, Crush adds attribution information to Git commits and pull requests
+By default, 4RGED adds attribution information to Git commits and pull requests
 it creates. You can customize this behavior with the `attribution` option:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "attribution": {
       "trailer_style": "co-authored-by",
@@ -582,15 +452,15 @@ it creates. You can customize this behavior with the `attribution` option:
 
 - `trailer_style`: Controls the attribution trailer added to commit messages
   (default: `assisted-by`)
-  - `assisted-by`: Adds `Assisted-by: Crush:[ModelID]` as specified in [the convention](https://docs.kernel.org/process/coding-assistants.html#attribution)
-  - `co-authored-by`: Adds `Co-Authored-By: Crush <crush@charm.land>`
+  - `assisted-by`: Adds `Assisted-by: 4RGED:[ModelID]` as specified in [the convention](https://docs.kernel.org/process/coding-assistants.html#attribution)
+  - `co-authored-by`: Adds `Co-Authored-By: 4RGED <4rged@4rged.app>`
   - `none`: No attribution trailer
-- `generated_with`: When true (default), adds `💘 Generated with Crush` line to
+- `generated_with`: When true (default), adds `💘 Generated with 4RGED` line to
   commit messages and PR descriptions
 
 ### Custom Providers
 
-Crush supports custom provider configurations for both OpenAI-compatible and
+4RGED supports custom provider configurations for both OpenAI-compatible and
 Anthropic-compatible APIs.
 
 > [!NOTE]
@@ -607,7 +477,7 @@ API. Don't forget to set `DEEPSEEK_API_KEY` in your environment.
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "providers": {
     "deepseek": {
       "type": "openai-compat",
@@ -636,7 +506,7 @@ Custom Anthropic-compatible providers follow this format:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "providers": {
     "custom-anthropic": {
       "type": "anthropic",
@@ -666,11 +536,11 @@ Custom Anthropic-compatible providers follow this format:
 
 ### Amazon Bedrock
 
-Crush currently supports running Anthropic models through Bedrock, with caching disabled.
+4RGED currently supports running Anthropic models through Bedrock, with caching disabled.
 
 - A Bedrock provider will appear once you have AWS configured, i.e. `aws configure`
-- Crush also expects the `AWS_REGION` or `AWS_DEFAULT_REGION` to be set
-- To use a specific AWS profile set `AWS_PROFILE` in your environment, i.e. `AWS_PROFILE=myprofile crush`
+- 4RGED also expects the `AWS_REGION` or `AWS_DEFAULT_REGION` to be set
+- To use a specific AWS profile set `AWS_PROFILE` in your environment, i.e. `AWS_PROFILE=myprofile 4rged`
 - Alternatively to `aws configure`, you can also just set `AWS_BEARER_TOKEN_BEDROCK`
 
 ### Vertex AI Platform
@@ -685,7 +555,7 @@ To add specific models to the configuration, configure as such:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "providers": {
     "vertexai": {
       "models": [
@@ -757,28 +627,28 @@ Local models can also be configured via OpenAI-compatible API. Here are two comm
 
 ## Logging
 
-Sometimes you need to look at logs. Luckily, Crush logs all sorts of
-stuff. Logs are stored in `./.crush/logs/crush.log` relative to the project.
+Sometimes you need to look at logs. Luckily, 4RGED logs all sorts of
+stuff. Logs are stored in `./.4rged/logs/4rged.log` relative to the project.
 
 The CLI also contains some helper commands to make perusing recent logs easier:
 
 ```bash
 # Print the last 1000 lines
-crush logs
+4rged logs
 
 # Print the last 500 lines
-crush logs --tail 500
+4rged logs --tail 500
 
 # Follow logs in real time
-crush logs --follow
+4rged logs --follow
 ```
 
-Want more logging? Run `crush` with the `--debug` flag, or enable it in the
+Want more logging? Run `4rged` with the `--debug` flag, or enable it in the
 config:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "debug": true,
     "debug_lsp": true
@@ -788,10 +658,10 @@ config:
 
 ## Provider Auto-Updates
 
-By default, Crush automatically checks for the latest and greatest list of
+By default, 4RGED automatically checks for the latest and greatest list of
 providers and models from [Catwalk](https://github.com/charmbracelet/catwalk),
-the open source Crush provider database. This means that when new providers and
-models are available, or when model metadata changes, Crush automatically
+the open source 4RGED provider database. This means that when new providers and
+models are available, or when model metadata changes, 4RGED automatically
 updates your local configuration.
 
 ### Disabling automatic provider updates
@@ -801,60 +671,60 @@ air-gapped environments, this might not be want you want, and this feature can
 be disabled.
 
 To disable automatic provider updates, set `disable_provider_auto_update` into
-your `crush.json` config:
+your `4rged.json` config:
 
 ```json
 {
-  "$schema": "https://charm.land/crush.json",
+  "$schema": "https://4rged.app/cli.json",
   "options": {
     "disable_provider_auto_update": true
   }
 }
 ```
 
-Or set the `CRUSH_DISABLE_PROVIDER_AUTO_UPDATE` environment variable:
+Or set the `F4RGED_DISABLE_PROVIDER_AUTO_UPDATE` environment variable:
 
 ```bash
-export CRUSH_DISABLE_PROVIDER_AUTO_UPDATE=1
+export F4RGED_DISABLE_PROVIDER_AUTO_UPDATE=1
 ```
 
 ### Manually updating providers
 
-Manually updating providers is possible with the `crush update-providers`
+Manually updating providers is possible with the `4rged update-providers`
 command:
 
 ```bash
 # Update providers remotely from Catwalk.
-crush update-providers
+4rged update-providers
 
 # Update providers from a custom Catwalk base URL.
-crush update-providers https://example.com/
+4rged update-providers https://example.com/
 
 # Update providers from a local file.
-crush update-providers /path/to/local-providers.json
+4rged update-providers /path/to/local-providers.json
 
-# Reset providers to the embedded version, embedded at crush at build time.
-crush update-providers embedded
+# Reset providers to the embedded version, embedded at 4rged at build time.
+4rged update-providers embedded
 
 # For more info:
-crush update-providers --help
+4rged update-providers --help
 ```
 
 ## Metrics
 
-Crush records pseudonymous usage metrics (tied to a device-specific hash),
+4RGED records pseudonymous usage metrics (tied to a device-specific hash),
 which maintainers rely on to inform development and support priorities. The
 metrics include solely usage metadata; prompts and responses are NEVER
 collected.
 
-Details on exactly what’s collected are in the source code ([here](https://github.com/charmbracelet/crush/tree/main/internal/event)
-and [here](https://github.com/charmbracelet/crush/blob/main/internal/llm/agent/event.go)).
+Details on exactly what’s collected are in the source code ([here](https://github.com/neelworx-cpu/F4RGE-CLI/tree/main/internal/event)
+and [here](https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/internal/llm/agent/event.go)).
 
 You can opt out of metrics collection at any time by setting the environment
 variable by setting the following in your environment:
 
 ```bash
-export CRUSH_DISABLE_METRICS=1
+export F4RGED_DISABLE_METRICS=1
 ```
 
 Or by setting the following in your config:
@@ -867,7 +737,7 @@ Or by setting the following in your config:
 }
 ```
 
-Crush also respects the [`DO_NOT_TRACK`](https://donottrack.sh/) convention
+4RGED also respects the [`DO_NOT_TRACK`](https://donottrack.sh/) convention
 which can be enabled via `export DO_NOT_TRACK=1`.
 
 ## Q&A
@@ -885,30 +755,12 @@ Installing an extra tool might be needed on Unix-like environments.
 
 ## Contributing
 
-See the [contributing guide](https://github.com/charmbracelet/crush?tab=contributing-ov-file#contributing).
+See the [contributing guide](https://github.com/neelworx-cpu/F4RGE-CLI?tab=contributing-ov-file#contributing).
 
-## Whatcha think?
+## Whatcha Think?
 
-We’d love to hear your thoughts on this project. Need help? We gotchu. You can find us on:
-
-- [Twitter](https://twitter.com/charmcli)
-- [Slack][slack]
-- [Discord][discord]
-- [The Fediverse](https://mastodon.social/@charmcli)
-- [Bluesky](https://bsky.app/profile/charm.land)
-
-[slack]: https://charm.land/slack
-[discord]: https://charm.land/discord
+4RGED is part of the F4RGE agentic developer platform. Follow the project and file issues in the [F4RGE-CLI repository](https://github.com/neelworx-cpu/F4RGE-CLI).
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/charmbracelet/crush/raw/main/LICENSE.md)
-
----
-
-Part of [Charm](https://charm.land).
-
-<a href="https://charm.land/"><img alt="The Charm logo" width="400" src="https://stuff.charm.sh/charm-banner-softy.jpg" /></a>
-
-<!--prettier-ignore-->
-Charm热爱开源 • Charm loves open source
+[FSL-1.1-MIT](https://github.com/neelworx-cpu/F4RGE-CLI/raw/main/LICENSE.md)

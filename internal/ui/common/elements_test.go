@@ -4,15 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/crush/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFormatTokensAndCostPrefixesEstimatedUsage(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 
 	rendered := formatTokensAndCost(&sty, 120, 1000, 0, true)
 	actual := ansi.Strip(rendered)
@@ -26,7 +26,7 @@ func TestFormatTokensAndCostPrefixesEstimatedUsage(t *testing.T) {
 func TestFormatTokensAndCostOmitsEstimatedPrefix(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.F4RGEDDark()
 
 	actual := ansi.Strip(formatTokensAndCost(&sty, 120, 1000, 0, false))
 

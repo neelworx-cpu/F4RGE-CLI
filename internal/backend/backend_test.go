@@ -9,11 +9,11 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/crush/internal/backend"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/proto"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/backend"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +41,7 @@ func TestBackend_WorkspaceSkillsIsolation(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(hostHome, ".config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(hostHome, ".local", "share"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(hostHome, ".cache"))
-	t.Setenv("CRUSH_SKILLS_DIR", t.TempDir())
+	t.Setenv("F4RGED_SKILLS_DIR", t.TempDir())
 
 	// Each workspace gets its own working directory containing a
 	// distinct project-local skill so the discovery output differs.
@@ -56,14 +56,14 @@ func TestBackend_WorkspaceSkillsIsolation(t *testing.T) {
 
 	wsA, _, err := b.CreateWorkspace(proto.Workspace{
 		Path:    wdA,
-		DataDir: filepath.Join(wdA, ".crush"),
+		DataDir: filepath.Join(wdA, ".4rged"),
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { b.DeleteWorkspace(wsA.ID) })
 
 	wsB, _, err := b.CreateWorkspace(proto.Workspace{
 		Path:    wdB,
-		DataDir: filepath.Join(wdB, ".crush"),
+		DataDir: filepath.Join(wdB, ".4rged"),
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { b.DeleteWorkspace(wsB.ID) })

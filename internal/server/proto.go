@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/charmbracelet/crush/internal/backend"
-	"github.com/charmbracelet/crush/internal/proto"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/backend"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
 )
 
 type controllerV1 struct {

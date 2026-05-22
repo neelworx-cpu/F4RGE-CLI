@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/charmbracelet/crush/internal/config/config",
+  "$id": "https://github.com/neelworx-cpu/F4RGE-CLI/internal/config/config",
   "$ref": "#/$defs/Config",
   "$defs": {
     "Attribution": {
@@ -22,7 +22,7 @@
         },
         "generated_with": {
           "type": "boolean",
-          "description": "Add Generated with Crush line to commit messages and issues and PRs",
+          "description": "Add Generated with F4rged line to commit messages and issues and PRs",
           "default": true
         }
       },
@@ -395,7 +395,7 @@
             "type": "string",
             "examples": [
               ".cursorrules",
-              "CRUSH.md"
+              "F4RGED.md"
             ]
           },
           "type": "array",
@@ -405,7 +405,7 @@
           "items": {
             "type": "string",
             "examples": [
-              "~/.config/crush/skills",
+              "~/.config/4rged/skills",
               "./skills"
             ]
           },
@@ -434,9 +434,9 @@
         "data_directory": {
           "type": "string",
           "description": "Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.",
-          "default": ".crush",
+          "default": ".4rged",
           "examples": [
-            ".crush"
+            ".4rged"
           ]
         },
         "disabled_tools": {
@@ -475,7 +475,7 @@
           "default": "AGENTS.md",
           "examples": [
             "AGENTS.md",
-            "CRUSH.md",
+            "F4RGED.md",
             "CLAUDE.md",
             "docs/LLMs.md"
           ]
@@ -499,7 +499,7 @@
           "items": {
             "type": "string",
             "examples": [
-              "crush-config"
+              "4rged-config"
             ]
           },
           "type": "array",

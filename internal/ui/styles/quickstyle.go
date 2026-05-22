@@ -10,8 +10,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2/ansi"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/ui/diffview"
 	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/diffview"
 )
 
 // quickStyleOpts is the palette of colors used by quickStyle to simplify the
@@ -56,8 +56,8 @@ type quickStyleOpts struct {
 	successMostSubtle color.Color
 }
 
-// quickStyle builds the default Styles (that is, the default theme, Charmtone
-// Pantera) from a palette of semi-semanticly-named colors.
+// quickStyle builds the default Styles from a palette of
+// semi-semanticly-named colors.
 //
 // The idea here is that you can do most of the work on a theme with quickStyle,
 // then add overrides as needed.
@@ -68,6 +68,15 @@ func quickStyle(o quickStyleOpts) Styles {
 		subtle = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
 		s      Styles
 	)
+	neutralPanel := o.bgMostVisible
+	neutralPanelSoft := o.bgLessVisible
+	neutralPanelRaised := o.bgLeastVisible
+	diffInsertFg := o.fgSubtle
+	diffInsertLineBg := o.bgMostVisible
+	diffInsertCodeBg := o.bgLessVisible
+	diffDeleteFg := o.fgMoreSubtle
+	diffDeleteLineBg := o.bgMostVisible
+	diffDeleteCodeBg := o.bgLeastVisible
 
 	s.Background = o.bgBase
 
@@ -142,7 +151,7 @@ func quickStyle(o quickStyleOpts) Styles {
 		Heading: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix: "\n",
-				Color:       hex(o.info),
+				Color:       hex(o.primary),
 				Bold:        new(true),
 			},
 		},
@@ -252,7 +261,7 @@ func quickStyle(o quickStyleOpts) Styles {
 					Color: hex(charmtone.Bengal),
 				},
 				Keyword: ansi.StylePrimitive{
-					Color: hex(o.info),
+					Color: hex(o.primary),
 				},
 				KeywordReserved: ansi.StylePrimitive{
 					Color: hex(charmtone.Pony),
@@ -495,11 +504,11 @@ func quickStyle(o quickStyleOpts) Styles {
 	}
 
 	s.Help = help.Styles{
-		ShortKey:       base.Foreground(o.fgMoreSubtle),
+		ShortKey:       base.Foreground(o.primary).Bold(true),
 		ShortDesc:      base.Foreground(o.fgMostSubtle),
 		ShortSeparator: base.Foreground(o.separator),
 		Ellipsis:       base.Foreground(o.separator),
-		FullKey:        base.Foreground(o.fgMoreSubtle),
+		FullKey:        base.Foreground(o.primary).Bold(true),
 		FullDesc:       base.Foreground(o.fgMostSubtle),
 		FullSeparator:  base.Foreground(o.separator),
 	}
@@ -508,16 +517,16 @@ func quickStyle(o quickStyleOpts) Styles {
 		DividerLine: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
 				Foreground(o.fgSubtle).
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 			Code: lipgloss.NewStyle().
 				Foreground(o.fgSubtle).
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 		},
 		MissingLine: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 			Code: lipgloss.NewStyle().
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 		},
 		EqualLine: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
@@ -529,31 +538,31 @@ func quickStyle(o quickStyleOpts) Styles {
 		},
 		InsertLine: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#629657")).
-				Background(lipgloss.Color("#2b322a")),
+				Foreground(diffInsertFg).
+				Background(diffInsertLineBg),
 			Symbol: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#629657")).
-				Background(lipgloss.Color("#323931")),
+				Foreground(diffInsertFg).
+				Background(diffInsertCodeBg),
 			Code: lipgloss.NewStyle().
-				Background(lipgloss.Color("#323931")),
+				Background(diffInsertCodeBg),
 		},
 		DeleteLine: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#a45c59")).
-				Background(lipgloss.Color("#312929")),
+				Foreground(diffDeleteFg).
+				Background(diffDeleteLineBg),
 			Symbol: lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#a45c59")).
-				Background(lipgloss.Color("#383030")),
+				Foreground(diffDeleteFg).
+				Background(diffDeleteCodeBg),
 			Code: lipgloss.NewStyle().
-				Background(lipgloss.Color("#383030")),
+				Background(diffDeleteCodeBg),
 		},
 		Filename: diffview.LineStyle{
 			LineNumber: lipgloss.NewStyle().
 				Foreground(o.fgSubtle).
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 			Code: lipgloss.NewStyle().
 				Foreground(o.fgSubtle).
-				Background(o.bgLeastVisible),
+				Background(neutralPanel),
 		},
 	}
 
@@ -574,7 +583,7 @@ func quickStyle(o quickStyleOpts) Styles {
 	// borders
 	s.ToolCallSuccess = lipgloss.NewStyle().Foreground(o.success).SetString(ToolSuccess)
 
-	s.Header.Charm = base.Foreground(o.secondary)
+	s.Header.Brand = lipgloss.NewStyle().Bold(true).Foreground(o.primary)
 	s.Header.Diagonals = base.Foreground(o.primary)
 	s.Header.Percentage = muted
 	s.Header.Hypercredit = base.Foreground(charmtone.Dolly)
@@ -597,22 +606,22 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.IconError = base.Foreground(o.error).SetString(ToolError)
 	s.Tool.IconCancelled = muted.SetString(ToolPending)
 
-	s.Tool.NameNormal = base.Foreground(o.info)
-	s.Tool.NameNested = base.Foreground(o.info)
+	s.Tool.NameNormal = base.Foreground(o.primary)
+	s.Tool.NameNested = base.Foreground(o.secondary)
 
 	s.Tool.ParamMain = subtle
 	s.Tool.ParamKey = subtle
 
 	// Content rendering - prepared styles that accept width parameter
-	s.Tool.ContentLine = muted.Background(o.bgLeastVisible)
-	s.Tool.ContentTruncation = muted.Background(o.bgLeastVisible)
+	s.Tool.ContentLine = muted.Background(neutralPanel)
+	s.Tool.ContentTruncation = muted.Background(neutralPanel)
 	s.Tool.ContentCodeLine = base.Background(o.bgBase).PaddingLeft(2)
 	s.Tool.ContentCodeTruncation = muted.Background(o.bgBase).PaddingLeft(2)
 	s.Tool.ContentCodeBg = o.bgBase
 	s.Tool.Body = base.PaddingLeft(2)
 
 	// Deprecated - kept for backward compatibility
-	s.Tool.ContentBg = muted.Background(o.bgLeastVisible)
+	s.Tool.ContentBg = muted.Background(neutralPanel)
 	s.Tool.ContentText = muted
 	s.Tool.ContentLineNumber = base.Foreground(o.fgMoreSubtle).Background(o.bgBase).PaddingRight(1).PaddingLeft(1)
 
@@ -623,28 +632,28 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.ErrorMessage = base.Foreground(o.fgSubtle)
 
 	// Diff and multi-edit styles
-	s.Tool.DiffTruncation = muted.Background(o.bgLeastVisible).PaddingLeft(2)
-	s.Tool.NoteTag = base.Padding(0, 1).Background(o.info).Foreground(o.onPrimary)
+	s.Tool.DiffTruncation = muted.Background(neutralPanelSoft).PaddingLeft(2)
+	s.Tool.NoteTag = base.Padding(0, 1).Background(o.primary).Foreground(o.bgBase)
 	s.Tool.NoteMessage = base.Foreground(o.fgSubtle)
 
 	// Job header styles
 	s.Tool.JobIconPending = base.Foreground(o.successMostSubtle)
 	s.Tool.JobIconError = base.Foreground(o.error)
 	s.Tool.JobIconSuccess = base.Foreground(o.success)
-	s.Tool.JobToolName = base.Foreground(o.info)
-	s.Tool.JobAction = base.Foreground(o.infoMostSubtle)
+	s.Tool.JobToolName = base.Foreground(o.primary)
+	s.Tool.JobAction = base.Foreground(o.secondary)
 	s.Tool.JobPID = muted
 	s.Tool.JobDescription = subtle
 
 	// Agent task styles
-	s.Tool.AgentTaskTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.infoMoreSubtle).Foreground(o.onPrimary)
+	s.Tool.AgentTaskTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(neutralPanelRaised).Foreground(o.secondary)
 	s.Tool.AgentPrompt = muted
 
 	// Agentic fetch styles
 	s.Tool.AgenticFetchPromptTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.success).Foreground(o.separator)
 
 	// Todo styles
-	s.Tool.TodoRatio = base.Foreground(o.infoMostSubtle)
+	s.Tool.TodoRatio = base.Foreground(o.secondary)
 	s.Tool.TodoCompletedIcon = base.Foreground(o.success)
 	s.Tool.TodoInProgressIcon = base.Foreground(o.successMostSubtle)
 	s.Tool.TodoPendingIcon = base.Foreground(o.fgMoreSubtle)
@@ -653,9 +662,9 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.TodoJustStarted = lipgloss.NewStyle().Foreground(o.fgBase)
 
 	// MCP styles
-	s.Tool.MCPName = base.Foreground(o.info)
-	s.Tool.MCPToolName = base.Foreground(o.infoMostSubtle)
-	s.Tool.MCPArrow = base.Foreground(o.info).SetString(ArrowRightIcon)
+	s.Tool.MCPName = base.Foreground(o.primary)
+	s.Tool.MCPToolName = base.Foreground(o.secondary)
+	s.Tool.MCPArrow = base.Foreground(o.primary).SetString(ArrowRightIcon)
 
 	// Loading indicators for images, skills
 	s.Tool.ResourceLoadedText = base.Foreground(o.success)
@@ -689,7 +698,12 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Button.Blurred = lipgloss.NewStyle().Foreground(o.fgBase).Background(o.bgLessVisible)
 
 	// Editor
-	s.Editor.PromptNormalFocused = lipgloss.NewStyle().Foreground(o.successMostSubtle).SetString("::: ")
+	s.Editor.Frame = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(o.primary).
+		Foreground(o.fgBase).
+		Padding(0, 1)
+	s.Editor.PromptNormalFocused = lipgloss.NewStyle().Foreground(o.primary).Bold(true).SetString("› ")
 	s.Editor.PromptNormalBlurred = s.Editor.PromptNormalFocused.Foreground(o.fgMoreSubtle)
 	s.Editor.PromptYoloIconFocused = lipgloss.NewStyle().MarginRight(1).Foreground(o.fgMostSubtle).Background(o.busy).Bold(true).SetString(" ! ")
 	s.Editor.PromptYoloIconBlurred = s.Editor.PromptYoloIconFocused.Foreground(o.bgBase).Background(o.fgMoreSubtle)
@@ -704,9 +718,9 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Logo.FieldColor = o.primary
 	s.Logo.TitleColorA = o.secondary
 	s.Logo.TitleColorB = o.primary
-	s.Logo.CharmColor = o.secondary
+	s.Logo.BrandColor = o.primary
 	s.Logo.VersionColor = o.primary
-	s.Logo.SmallCharm = lipgloss.NewStyle().Foreground(o.secondary)
+	s.Logo.SmallBrand = lipgloss.NewStyle().Bold(true).Foreground(o.primary)
 	s.Logo.SmallDiagonals = lipgloss.NewStyle().Foreground(o.primary)
 	s.Logo.GradCanvas = lipgloss.NewStyle()
 	s.Logo.SmallGradFromColor = o.secondary
@@ -843,15 +857,15 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Dialog.PrimaryText = base.Padding(0, 1).Foreground(o.primary)
 	s.Dialog.SecondaryText = base.Padding(0, 1).Foreground(o.fgMostSubtle)
 	s.Dialog.HelpView = base.Padding(0, 1).AlignHorizontal(lipgloss.Left)
-	s.Dialog.Help.ShortKey = base.Foreground(o.fgMoreSubtle)
+	s.Dialog.Help.ShortKey = base.Foreground(o.primary).Bold(true)
 	s.Dialog.Help.ShortDesc = base.Foreground(o.fgMostSubtle)
 	s.Dialog.Help.ShortSeparator = base.Foreground(o.separator)
 	s.Dialog.Help.Ellipsis = base.Foreground(o.separator)
-	s.Dialog.Help.FullKey = base.Foreground(o.fgMoreSubtle)
+	s.Dialog.Help.FullKey = base.Foreground(o.primary).Bold(true)
 	s.Dialog.Help.FullDesc = base.Foreground(o.fgMostSubtle)
 	s.Dialog.Help.FullSeparator = base.Foreground(o.separator)
 	s.Dialog.NormalItem = base.Padding(0, 1).Foreground(o.fgBase)
-	s.Dialog.SelectedItem = base.Padding(0, 1).Background(o.primary).Foreground(o.onPrimary)
+	s.Dialog.SelectedItem = lipgloss.NewStyle().Padding(0, 1).Bold(true).Background(o.primary).Foreground(o.bgBase)
 	s.Dialog.InputPrompt = base.Margin(1, 1)
 
 	s.Dialog.List = base.Margin(0, 0, 1, 0)
@@ -903,12 +917,12 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Dialog.Sessions.InfoFocused = lipgloss.NewStyle().Foreground(o.fgBase)
 
 	s.Status.Help = lipgloss.NewStyle().Padding(0, 1)
-	s.Status.SuccessIndicator = base.Foreground(o.bgLessVisible).Background(o.success).Padding(0, 1).Bold(true).SetString("OKAY!")
+	s.Status.SuccessIndicator = base.Foreground(o.onPrimary).Background(o.primary).Padding(0, 1).Bold(true).SetString("OKAY!")
 	s.Status.InfoIndicator = s.Status.SuccessIndicator
 	s.Status.UpdateIndicator = s.Status.SuccessIndicator.SetString("HEY!")
 	s.Status.WarnIndicator = s.Status.SuccessIndicator.Foreground(o.bgMostVisible).Background(o.warning).SetString("WARNING")
 	s.Status.ErrorIndicator = s.Status.SuccessIndicator.Foreground(o.bgBase).Background(o.destructive).SetString("ERROR")
-	s.Status.SuccessMessage = base.Foreground(o.bgLessVisible).Background(o.successMostSubtle).Padding(0, 1)
+	s.Status.SuccessMessage = base.Foreground(o.onPrimary).Background(o.primary).Padding(0, 1)
 	s.Status.InfoMessage = s.Status.SuccessMessage
 	s.Status.UpdateMessage = s.Status.SuccessMessage
 	s.Status.WarnMessage = s.Status.SuccessMessage.Foreground(o.bgMostVisible).Background(o.warningSubtle)

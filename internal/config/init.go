@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
 )
 
 const (

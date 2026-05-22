@@ -1,12 +1,12 @@
-// Package main is the entry point for the Crush CLI.
+// Package main is the entry point for the 4rged CLI.
 //
-//	@title			Crush API
+//	@title			4rged API
 //	@version		1.0
-//	@description	Crush is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
-//	@contact.name	Charm
-//	@contact.url	https://charm.sh
+//	@description	4rged is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
+//	@contact.name	F4RGE
+//	@contact.url	https://4rged.app
 //	@license.name	MIT
-//	@license.url	https://github.com/charmbracelet/crush/blob/main/LICENSE
+//	@license.url	https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE
 //	@BasePath		/v1
 package main
 
@@ -16,13 +16,13 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/charmbracelet/crush/internal/cmd"
-	_ "github.com/charmbracelet/crush/internal/dns"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/cmd"
+	_ "github.com/neelworx-cpu/F4RGE-CLI/internal/dns"
 )
 
 func main() {
-	if os.Getenv("CRUSH_PROFILE") != "" {
+	if os.Getenv("F4RGED_PROFILE") != "" {
 		go func() {
 			slog.Info("Serving pprof at localhost:6060")
 			if httpErr := http.ListenAndServe("localhost:6060", nil); httpErr != nil {

@@ -172,14 +172,6 @@ definitions:
           type: string
         type: array
     type: object
-  config.Scope:
-    enum:
-    - 0
-    - 1
-    type: integer
-    x-enum-varnames:
-    - ScopeGlobal
-    - ScopeWorkspace
   config.SelectedModel:
     properties:
       frequency_penalty:
@@ -268,7 +260,7 @@ definitions:
     - TrailerStyleAssistedBy
   csync.Map-string-config_ProviderConfig:
     type: object
-  github_com_charmbracelet_crush_internal_config.Config:
+  github_com_neelworx-cpu_F4RGE-CLI_internal_config.Config:
     properties:
       $schema:
         type: string
@@ -288,7 +280,7 @@ definitions:
         description: We currently only support large/small as values here.
         type: object
       options:
-        $ref: '#/definitions/github_com_charmbracelet_crush_internal_config.Options'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Options'
       permissions:
         $ref: '#/definitions/config.Permissions'
       providers:
@@ -305,7 +297,7 @@ definitions:
       tools:
         $ref: '#/definitions/config.Tools'
     type: object
-  github_com_charmbracelet_crush_internal_config.Options:
+  github_com_neelworx-cpu_F4RGE-CLI_internal_config.Options:
     properties:
       attribution:
         $ref: '#/definitions/config.Attribution'
@@ -317,7 +309,7 @@ definitions:
         type: array
       data_directory:
         description: |-
-          DataDirectory is where Crush keeps per-project state such as
+          DataDirectory is where F4rged keeps per-project state such as
           the SQLite database and workspace overrides. Relative paths are
           resolved against the working directory; absolute paths are used
           verbatim. After defaulting the stored value is always absolute.
@@ -355,7 +347,15 @@ definitions:
       tui:
         $ref: '#/definitions/config.TUIOptions'
     type: object
-  github_com_charmbracelet_crush_internal_proto.Message:
+  github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - ScopeGlobal
+    - ScopeWorkspace
+  github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message:
     properties:
       created_at:
         type: integer
@@ -443,6 +443,10 @@ definitions:
         type: string
       title:
         type: string
+      todos:
+        items:
+          $ref: '#/definitions/proto.Todo'
+        type: array
       updated_at:
         type: integer
     type: object
@@ -464,7 +468,7 @@ definitions:
       enabled:
         type: boolean
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
     type: object
   proto.ConfigModelRequest:
     properties:
@@ -473,7 +477,7 @@ definitions:
       model_type:
         $ref: '#/definitions/config.SelectedModelType'
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
     type: object
   proto.ConfigProviderKeyRequest:
     properties:
@@ -486,28 +490,28 @@ definitions:
       provider_id:
         type: string
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
     type: object
   proto.ConfigRefreshOAuthRequest:
     properties:
       provider_id:
         type: string
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
     type: object
   proto.ConfigRemoveRequest:
     properties:
       key:
         type: string
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
     type: object
   proto.ConfigSetRequest:
     properties:
       key:
         type: string
       scope:
-        $ref: '#/definitions/config.Scope'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Scope'
       value: {}
     type: object
   proto.Error:
@@ -705,8 +709,40 @@ definitions:
         type: string
       title:
         type: string
+      todos:
+        items:
+          $ref: '#/definitions/proto.Todo'
+        type: array
       updated_at:
         type: integer
+    type: object
+  proto.SkillDiscoveryState:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - SkillStateNormal
+    - SkillStateError
+  proto.SkillState:
+    properties:
+      error:
+        type: string
+      name:
+        type: string
+      path:
+        type: string
+      state:
+        $ref: '#/definitions/proto.SkillDiscoveryState'
+    type: object
+  proto.Todo:
+    properties:
+      active_form:
+        type: string
+      content:
+        type: string
+      status:
+        type: string
     type: object
   proto.VersionInfo:
     properties:
@@ -724,7 +760,7 @@ definitions:
   proto.Workspace:
     properties:
       config:
-        $ref: '#/definitions/github_com_charmbracelet_crush_internal_config.Config'
+        $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_config.Config'
       data_dir:
         type: string
       debug:
@@ -737,6 +773,14 @@ definitions:
         type: string
       path:
         type: string
+      skills:
+        description: |-
+          Skills carries the snapshot of skill discovery state at workspace
+          creation time. Subsequent updates flow through the SSE event
+          stream.
+        items:
+          $ref: '#/definitions/proto.SkillState'
+        type: array
       version:
         type: string
       yolo:
@@ -765,15 +809,15 @@ definitions:
     - Hour
 info:
   contact:
-    name: Charm
-    url: https://charm.sh
-  description: Crush is a terminal-based AI coding assistant. This API is served over
+    name: F4RGE
+    url: https://4rged.app
+  description: 4rged is a terminal-based AI coding assistant. This API is served over
     a Unix socket (or Windows named pipe) and provides programmatic access to workspaces,
     sessions, agents, LSP, MCP, and more.
   license:
     name: MIT
-    url: https://github.com/charmbracelet/crush/blob/main/LICENSE
-  title: Crush API
+    url: https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE
+  title: 4rged API
   version: "1.0"
 paths:
   /config:
@@ -1952,7 +1996,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_charmbracelet_crush_internal_proto.Message'
+              $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message'
             type: array
         "404":
           description: Not Found
@@ -2408,7 +2452,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_charmbracelet_crush_internal_proto.Message'
+              $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message'
             type: array
         "404":
           description: Not Found
@@ -2441,7 +2485,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_charmbracelet_crush_internal_proto.Message'
+              $ref: '#/definitions/github_com_neelworx-cpu_F4RGE-CLI_internal_proto.Message'
             type: array
         "404":
           description: Not Found

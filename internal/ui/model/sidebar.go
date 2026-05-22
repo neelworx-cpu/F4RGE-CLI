@@ -6,10 +6,10 @@ import (
 	"image"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/logo"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/logo"
 )
 
 // modelInfo renders the current model information including reasoning
@@ -18,6 +18,8 @@ func (m *UI) modelInfo(width int) string {
 	model := m.selectedLargeModel()
 	reasoningInfo := ""
 	providerName := ""
+	activePane := m.activeSidebarPane()
+	activeSession := activePane.session
 
 	if model != nil {
 		// Get provider name first
@@ -42,12 +44,12 @@ func (m *UI) modelInfo(width int) string {
 	}
 
 	var modelContext *common.ModelContextInfo
-	if model != nil && m.session != nil {
+	if model != nil && activeSession != nil {
 		modelContext = &common.ModelContextInfo{
-			ContextUsed:    m.session.CompletionTokens + m.session.PromptTokens,
-			Cost:           m.session.Cost,
+			ContextUsed:    activeSession.CompletionTokens + activeSession.PromptTokens,
+			Cost:           activeSession.Cost,
 			ModelContext:   model.CatwalkCfg.ContextWindow,
-			EstimatedUsage: m.session.EstimatedUsage,
+			EstimatedUsage: activeSession.EstimatedUsage,
 		}
 	}
 	var modelName string
@@ -129,9 +131,11 @@ func getDynamicHeightLimits(availableHeight, fileCount, lspCount, mcpCount, skil
 // sidebar renders the chat sidebar containing session title, working
 // directory, model info, file list, LSP status, and MCP status.
 func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
-	if m.session == nil {
+	activePane := m.activeSidebarPane()
+	if activePane == nil || activePane.session == nil {
 		return
 	}
+	activeSessionFiles := m.activeSidebarSessionFiles()
 
 	const logoHeightBreakpoint = 30
 
@@ -139,7 +143,7 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 	width := area.Dx()
 	height := area.Dy()
 
-	title := t.Sidebar.SessionTitle.Width(width).MaxHeight(2).Render(m.session.Title)
+	title := t.Sidebar.SessionTitle.Width(width).MaxHeight(2).Render(activePane.session.Title)
 	cwd := common.PrettyPath(t, m.com.Workspace.WorkingDir(), width)
 	sidebarLogo := m.sidebarLogo
 	if height < logoHeightBreakpoint {
@@ -169,7 +173,7 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 	).Split(m.layout.sidebar).Assign(new(image.Rectangle), &remainingHeightArea)
 	remainingHeight := remainingHeightArea.Dy() - 6
 	filesCount := 0
-	for _, f := range m.sessionFiles {
+	for _, f := range activeSessionFiles {
 		if f.Additions == 0 && f.Deletions == 0 {
 			continue
 		}

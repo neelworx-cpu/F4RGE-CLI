@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/home"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools/mcp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/home"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 )
 
 var namedArgPattern = regexp.MustCompile(`\$([A-Z][A-Z0-9_]*)`)
@@ -160,11 +160,11 @@ func LoadMCPPrompts() ([]MCPPrompt, error) {
 func buildCommandSources(cfg *config.Config) []commandSource {
 	return []commandSource{
 		{
-			path:   filepath.Join(home.Config(), "crush", "commands"),
+			path:   filepath.Join(home.Config(), "4rged", "commands"),
 			prefix: userCommandPrefix,
 		},
 		{
-			path:   filepath.Join(home.Dir(), ".crush", "commands"),
+			path:   filepath.Join(home.Dir(), ".4rged", "commands"),
 			prefix: userCommandPrefix,
 		},
 		{

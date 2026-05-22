@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/charmbracelet/crush/internal/proto"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
 )
 
 // handlePostWorkspaceConfigSet sets a configuration field.

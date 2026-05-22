@@ -17,11 +17,11 @@ import (
 	"unicode/utf8"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/filepathext"
-	"github.com/charmbracelet/crush/internal/filetracker"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filepathext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/permission"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/skills"
 )
 
 //go:embed view.md.tpl
@@ -103,7 +103,7 @@ func NewViewTool(
 				return fantasy.NewTextErrorResponse("file_path is required"), nil
 			}
 
-			// Handle builtin skill files (crush: prefix).
+			// Handle builtin skill files (4rged: prefix).
 			if strings.HasPrefix(params.FilePath, skills.BuiltinPrefix) {
 				resp, err := readBuiltinFile(params, skillTracker)
 				return resp, err

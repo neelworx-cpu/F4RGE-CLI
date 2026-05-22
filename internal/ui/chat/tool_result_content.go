@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/diffdetect"
-	"github.com/charmbracelet/crush/internal/stringext"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/diffdetect"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/stringext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 )
 
 type toolResultContentWidths struct {
