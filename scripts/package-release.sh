@@ -39,5 +39,6 @@ build_archive darwin amd64
 build_archive linux arm64
 build_archive linux amd64
 build_archive windows amd64
+build_archive windows arm64
 
 echo "release artifacts written to $dist"
