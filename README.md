@@ -23,13 +23,13 @@
 Install 4RGED with the F4RGE install script:
 
 ```bash
-curl https://cli.4rge.ai/install -fsS | bash
+curl https://4rged.ai/install -fsS | bash
 ```
 
 On Windows PowerShell:
 
 ```powershell
-iwr https://cli.4rge.ai/install.ps1 -useb | iex
+iwr https://4rged.ai/install.ps1 -useb | iex
 ```
 
 The installer detects your OS and architecture, downloads the release artifact,

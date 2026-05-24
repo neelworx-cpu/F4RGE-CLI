@@ -95,7 +95,7 @@ That behavior is useful for an open-source or power-user terminal tool, but it i
 Target customer install:
 
 ```bash
-curl https://cli.4rge.ai/install -fsS | bash
+curl https://4rged.ai/install -fsS | bash
 ```
 
 Alternative domains can be decided later, but the command should read like a first-party product command, not a GitHub release workaround.
@@ -118,7 +118,7 @@ Then: 4rged
 Optional future convenience:
 
 ```bash
-curl https://cli.4rge.ai/install -fsS | bash && 4rged login
+curl https://4rged.ai/install -fsS | bash && 4rged login
 ```
 
 ### First-Run Flow
@@ -1341,7 +1341,7 @@ The first implementation milestone should be:
 
 ## Open Product Decisions
 
-1. What should the public install domain be: `cli.4rge.ai`, `4rged.ai/install`, or `4rge.ai/install`?
+1. Public install domain: `4rged.ai/install`.
 2. Should the binary stay `4rged`, or do we also provide a friendlier alias such as `f4rge`?
 3. Should first run auto-start login, or should it print `Run 4rged login`?
 4. Should the default visible model be `Auto`, `4RGE 2.0`, or admin-configured?
