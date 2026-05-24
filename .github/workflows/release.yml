@@ -36,7 +36,7 @@ jobs:
             || gh release create "${GITHUB_REF_NAME}" dist/cli/* --title "${GITHUB_REF_NAME}" --notes "F4RGE CLI ${GITHUB_REF_NAME}" --latest --verify-tag
       - name: Upload installer artifacts to Vercel Blob
         env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          F4RGE_DOWNLOADS_BLOB_READ_WRITE_TOKEN: ${{ secrets.F4RGE_DOWNLOADS_BLOB_READ_WRITE_TOKEN }}
         run: |
-          test -n "$BLOB_READ_WRITE_TOKEN"
-          npx --yes @vercel/blob@latest put --token "$BLOB_READ_WRITE_TOKEN" --pathname cli --multipart dist/cli/*
+          test -n "$F4RGE_DOWNLOADS_BLOB_READ_WRITE_TOKEN"
+          npx --yes @vercel/blob@latest put --token "$F4RGE_DOWNLOADS_BLOB_READ_WRITE_TOKEN" --pathname cli --multipart dist/cli/*
