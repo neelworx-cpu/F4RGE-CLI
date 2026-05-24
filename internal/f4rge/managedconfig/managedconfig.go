@@ -9,6 +9,7 @@ import (
 )
 
 const ProviderID = "f4rge-gateway"
+const AutoModelID = "auto"
 
 func Apply(store *config.ConfigStore) bool {
 	session, err := f4rgesession.Load()
@@ -20,7 +21,15 @@ func Apply(store *config.ConfigStore) bool {
 	if err != nil || bundle == nil || len(bundle.Models) == 0 {
 		return false
 	}
-	models := make([]catwalk.Model, 0, len(bundle.Models))
+	models := make([]catwalk.Model, 0, len(bundle.Models)+1)
+	models = append(models, catwalk.Model{
+		ID:                     AutoModelID,
+		Name:                   "Auto",
+		ContextWindow:          0,
+		CanReason:              true,
+		DefaultMaxTokens:       4096,
+		DefaultReasoningEffort: "medium",
+	})
 	for _, model := range bundle.Models {
 		models = append(models, catwalk.Model{
 			ID:                     model.ID,

@@ -541,6 +541,13 @@ func (m *Models) setManagedModelItems() error {
 	currentModel := cfg.Models[config.SelectedModelTypeLarge]
 	var selectedItemID string
 	var groups []ModelGroup
+	autoGroup := NewModelGroup(t, "Recommended", false)
+	autoItem := NewManagedAutoModelItem(t, m.modelType)
+	autoGroup.AppendItems(autoItem)
+	if currentModel.Model == managedconfig.AutoModelID || currentModel.Model == "" {
+		selectedItemID = autoItem.ID()
+	}
+	groups = append(groups, autoGroup)
 	for _, providerGroup := range bundle.GroupedModels() {
 		group := NewModelGroup(t, providerGroup.Label, false)
 		for _, catalogModel := range providerGroup.Models {

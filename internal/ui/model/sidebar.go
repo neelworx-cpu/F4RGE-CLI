@@ -37,7 +37,11 @@ func (m *UI) modelInfo(width int) string {
 	activeSession := activePane.session
 
 	if model != nil {
-		if model.ModelCfg.Provider == managedconfig.ProviderID {
+		if model.ModelCfg.Provider == managedconfig.ProviderID && model.ModelCfg.Model == managedconfig.AutoModelID {
+			modelName = "Auto"
+			providerName = "Best available model"
+		}
+		if model.ModelCfg.Provider == managedconfig.ProviderID && model.ModelCfg.Model != managedconfig.AutoModelID {
 			if bundle, err := modelcatalog.LoadCached(); err == nil && bundle != nil {
 				if catalogModel, ok := bundle.ModelByID(model.ModelCfg.Model); ok {
 					modelName = catalogModel.Label

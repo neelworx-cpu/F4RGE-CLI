@@ -142,6 +142,27 @@ func NewManagedModelItem(t *styles.Styles, model modelcatalog.Model, providerNam
 	}
 }
 
+func NewManagedAutoModelItem(t *styles.Styles, typ ModelType) *ModelItem {
+	return &ModelItem{
+		Versioned: list.NewVersioned(),
+		prov: catwalk.Provider{
+			ID:   catwalk.InferenceProvider(managedconfig.ProviderID),
+			Name: "Auto",
+		},
+		model: catwalk.Model{
+			ID:                     managedconfig.AutoModelID,
+			Name:                   "Auto",
+			CanReason:              true,
+			DefaultMaxTokens:       4096,
+			DefaultReasoningEffort: "medium",
+		},
+		modelType:    typ,
+		t:            t,
+		cache:        make(map[int]string),
+		providerName: "Best available model",
+	}
+}
+
 // Filter implements ListItem.
 func (m *ModelItem) Filter() string {
 	return m.model.Name
