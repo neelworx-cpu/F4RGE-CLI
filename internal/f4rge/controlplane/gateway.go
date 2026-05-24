@@ -31,6 +31,42 @@ type InferenceRequest struct {
 	Metadata       map[string]any     `json:"metadata,omitempty"`
 }
 
+type InferenceSmokeResult struct {
+	RequestID string
+	Text      string
+}
+
+func (c Client) SmokeInference(ctx context.Context, session *f4rgesession.ManagedSession, modelID string) (*InferenceSmokeResult, error) {
+	if modelID == "" {
+		return nil, fmt.Errorf("model ID is required")
+	}
+	requestID := "cli_smoke_" + modelID
+	body, err := c.StreamInference(ctx, session, InferenceRequest{
+		RequestID:      requestID,
+		Surface:        "cli",
+		OrganizationID: session.OrganizationID,
+		SessionID:      session.RuntimeSessionID,
+		ModelID:        modelID,
+		PromptMode:     "ask",
+		Messages: []InferenceMessage{{
+			Role:    "user",
+			Content: "Reply with exactly: ok",
+		}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	return &InferenceSmokeResult{
+		RequestID: requestID,
+		Text:      string(data),
+	}, nil
+}
+
 func (c Client) StreamInference(ctx context.Context, session *f4rgesession.ManagedSession, request InferenceRequest) (io.ReadCloser, error) {
 	if session == nil || session.AccessToken == "" {
 		return nil, fmt.Errorf("F4RGE sign-in required")

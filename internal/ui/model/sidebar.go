@@ -8,6 +8,8 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/logo"
 )
@@ -30,13 +32,22 @@ func (m *UI) modelInfo(width int) string {
 	model := m.selectedLargeModel()
 	reasoningInfo := ""
 	providerName := ""
+	modelName := ""
 	activePane := m.activeSidebarPane()
 	activeSession := activePane.session
 
 	if model != nil {
+		if model.ModelCfg.Provider == managedconfig.ProviderID {
+			if bundle, err := modelcatalog.LoadCached(); err == nil && bundle != nil {
+				if catalogModel, ok := bundle.ModelByID(model.ModelCfg.Model); ok {
+					modelName = catalogModel.Label
+					providerName = bundle.ProviderLabel(catalogModel.Provider)
+				}
+			}
+		}
 		// Get provider name first
 		providerConfig, ok := m.com.Config().Providers.Get(model.ModelCfg.Provider)
-		if ok {
+		if ok && providerName == "" {
 			providerName = providerConfig.Name
 
 			// Only check reasoning if model can reason
@@ -64,9 +75,10 @@ func (m *UI) modelInfo(width int) string {
 			EstimatedUsage: activeSession.EstimatedUsage,
 		}
 	}
-	var modelName string
 	if model != nil {
-		modelName = model.CatwalkCfg.Name
+		if modelName == "" {
+			modelName = model.CatwalkCfg.Name
+		}
 	}
 	return common.ModelInfo(m.com.Styles, modelName, providerName, reasoningInfo, modelContext, width, m.hyperCredits)
 }

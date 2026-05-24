@@ -5,6 +5,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/list"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
@@ -69,6 +71,8 @@ type ModelItem struct {
 	m            fuzzy.Match
 	focused      bool
 	showProvider bool
+	managed      *modelcatalog.Model
+	providerName string
 }
 
 // Finished implements list.Item. Model items are render-stable
@@ -79,6 +83,14 @@ func (m *ModelItem) Finished() bool {
 
 // SelectedModel returns this model item as a [config.SelectedModel] instance.
 func (m *ModelItem) SelectedModel() config.SelectedModel {
+	if m.managed != nil {
+		return config.SelectedModel{
+			Model:           m.managed.ID,
+			Provider:        managedconfig.ProviderID,
+			ReasoningEffort: m.model.DefaultReasoningEffort,
+			MaxTokens:       m.model.DefaultMaxTokens,
+		}
+	}
 	return config.SelectedModel{
 		Model:           m.model.ID,
 		Provider:        string(m.prov.ID),
@@ -107,6 +119,29 @@ func NewModelItem(t *styles.Styles, prov catwalk.Provider, model catwalk.Model, 
 	}
 }
 
+func NewManagedModelItem(t *styles.Styles, model modelcatalog.Model, providerName string, typ ModelType) *ModelItem {
+	return &ModelItem{
+		Versioned: list.NewVersioned(),
+		prov: catwalk.Provider{
+			ID:   catwalk.InferenceProvider(managedconfig.ProviderID),
+			Name: providerName,
+		},
+		model: catwalk.Model{
+			ID:                     model.ID,
+			Name:                   model.Label,
+			ContextWindow:          int64(model.ContextWindow),
+			CanReason:              true,
+			DefaultMaxTokens:       int64(model.MaxOutputTokens),
+			DefaultReasoningEffort: "medium",
+		},
+		modelType:    typ,
+		t:            t,
+		cache:        make(map[int]string),
+		managed:      &model,
+		providerName: providerName,
+	}
+}
+
 // Filter implements ListItem.
 func (m *ModelItem) Filter() string {
 	return m.model.Name
@@ -122,6 +157,12 @@ func (m *ModelItem) Render(width int) string {
 	var providerInfo string
 	if m.showProvider {
 		providerInfo = string(m.prov.Name)
+	}
+	if m.managed != nil {
+		providerInfo = m.providerName
+		if m.managed.Description != "" {
+			providerInfo = m.managed.Description
+		}
 	}
 	itemStyles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,

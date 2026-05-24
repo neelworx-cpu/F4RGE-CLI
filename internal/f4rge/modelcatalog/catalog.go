@@ -17,16 +17,25 @@ import (
 const cacheFileName = "f4rge-model-catalog.json"
 
 type Bundle struct {
-	SchemaVersion  int       `json:"schemaVersion"`
-	CatalogVersion string    `json:"catalogVersion"`
-	CanonicalHash  string    `json:"canonicalHash"`
-	GeneratedAt    string    `json:"generatedAt"`
-	OrganizationID string    `json:"organizationId"`
-	SubjectUserID  string    `json:"subjectUserId"`
-	Surface        string    `json:"surface"`
-	Models         []Model   `json:"models"`
-	Defaults       Defaults  `json:"defaults"`
-	CachedAt       time.Time `json:"cachedAt,omitempty"`
+	SchemaVersion  int        `json:"schemaVersion"`
+	CatalogVersion string     `json:"catalogVersion"`
+	CanonicalHash  string     `json:"canonicalHash"`
+	GeneratedAt    string     `json:"generatedAt"`
+	OrganizationID string     `json:"organizationId"`
+	SubjectUserID  string     `json:"subjectUserId"`
+	Surface        string     `json:"surface"`
+	Providers      []Provider `json:"providers"`
+	Models         []Model    `json:"models"`
+	Defaults       Defaults   `json:"defaults"`
+	CachedAt       time.Time  `json:"cachedAt,omitempty"`
+}
+
+type Provider struct {
+	ID             string   `json:"id"`
+	Label          string   `json:"label"`
+	Status         string   `json:"status"`
+	CredentialMode string   `json:"credentialMode"`
+	Surfaces       []string `json:"surfaces"`
 }
 
 type Defaults struct {
@@ -135,4 +144,90 @@ func Validate(bundle *Bundle, session *f4rgesession.ManagedSession) error {
 		return fmt.Errorf("model catalog missing agent default")
 	}
 	return nil
+}
+
+func (b *Bundle) ModelByID(modelID string) (Model, bool) {
+	if b == nil {
+		return Model{}, false
+	}
+	for _, model := range b.Models {
+		if model.ID == modelID {
+			return model, true
+		}
+	}
+	return Model{}, false
+}
+
+func (b *Bundle) ProviderByID(providerID string) (Provider, bool) {
+	if b == nil {
+		return Provider{}, false
+	}
+	for _, provider := range b.Providers {
+		if provider.ID == providerID {
+			return provider, true
+		}
+	}
+	return Provider{}, false
+}
+
+func (b *Bundle) ProviderLabel(providerID string) string {
+	if provider, ok := b.ProviderByID(providerID); ok && provider.Label != "" {
+		return provider.Label
+	}
+	switch providerID {
+	case "openai":
+		return "OpenAI"
+	case "anthropic":
+		return "Anthropic"
+	case "google":
+		return "Google"
+	case "azure":
+		return "Azure OpenAI"
+	case "f4rge":
+		return "4RGE-AI"
+	default:
+		return providerID
+	}
+}
+
+func (b *Bundle) GroupedModels() []ProviderGroup {
+	if b == nil {
+		return nil
+	}
+	groupByProvider := map[string][]Model{}
+	order := make([]string, 0, len(b.Providers))
+	seen := map[string]bool{}
+	for _, provider := range b.Providers {
+		if provider.Status == "disabled" {
+			continue
+		}
+		order = append(order, provider.ID)
+		seen[provider.ID] = true
+	}
+	for _, model := range b.Models {
+		if !seen[model.Provider] {
+			order = append(order, model.Provider)
+			seen[model.Provider] = true
+		}
+		groupByProvider[model.Provider] = append(groupByProvider[model.Provider], model)
+	}
+	groups := make([]ProviderGroup, 0, len(order))
+	for _, providerID := range order {
+		models := groupByProvider[providerID]
+		if len(models) == 0 {
+			continue
+		}
+		groups = append(groups, ProviderGroup{
+			ProviderID: providerID,
+			Label:      b.ProviderLabel(providerID),
+			Models:     models,
+		})
+	}
+	return groups
+}
+
+type ProviderGroup struct {
+	ProviderID string
+	Label      string
+	Models     []Model
 }

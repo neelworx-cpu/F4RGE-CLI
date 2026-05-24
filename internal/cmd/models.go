@@ -35,7 +35,8 @@ Local BYOK/provider models are not part of the managed F4RGE CLI product path.`,
 		if catalogErr == nil && bundle != nil && len(bundle.Models) > 0 {
 			term := strings.ToLower(strings.Join(args, " "))
 			for _, model := range bundle.Models {
-				haystack := strings.ToLower(strings.Join([]string{model.ID, model.Provider, model.ProviderModelID, model.Label, model.Description}, " "))
+				providerLabel := bundle.ProviderLabel(model.Provider)
+				haystack := strings.ToLower(strings.Join([]string{model.ID, model.Provider, providerLabel, model.ProviderModelID, model.Label, model.Description}, " "))
 				if term != "" && !strings.Contains(haystack, term) {
 					continue
 				}
@@ -43,7 +44,7 @@ Local BYOK/provider models are not part of the managed F4RGE CLI product path.`,
 					fmt.Println(model.ID)
 					continue
 				}
-				fmt.Printf("%-28s %-12s %-16s %s\n", model.ID, model.Provider, model.RequestProfile.APIFamily, model.Label)
+				fmt.Printf("%-28s %-16s %s\n", model.ID, providerLabel, model.Label)
 			}
 			return nil
 		}

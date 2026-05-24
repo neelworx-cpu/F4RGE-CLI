@@ -3,6 +3,7 @@ package dialog
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"slices"
 
 	"charm.land/bubbles/v2/help"
@@ -12,6 +13,8 @@ import (
 	"charm.land/catwalk/pkg/catwalk"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/common"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/util"
 )
@@ -143,19 +146,16 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 	)
 	m.keyMap.Close = CloseKey
 
-	if provider, ok := m.com.Config().Providers.Get("f4rge-gateway"); ok {
+	if _, ok := m.com.Config().Providers.Get(managedconfig.ProviderID); ok {
 		m.isManaged = true
-		m.providers = []catwalk.Provider{{
-			ID:     catwalk.InferenceProvider(provider.ID),
-			Name:   "F4RGE Models",
-			Models: provider.Models,
-		}}
-	} else {
+	} else if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") == "1" {
 		var err error
 		m.providers, err = config.Providers(m.com.Config())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
 		}
+	} else {
+		return nil, fmt.Errorf("models are not ready; run `4rged login --force`")
 	}
 
 	if err := m.setProviderItems(); err != nil {
@@ -341,6 +341,9 @@ func (m *Models) FullHelp() [][]key.Binding {
 }
 
 func (m *Models) isSelectedConfigured() bool {
+	if m.isManaged {
+		return false
+	}
 	selectedItem := m.list.SelectedItem()
 	if selectedItem == nil {
 		return false
@@ -358,6 +361,9 @@ func (m *Models) isSelectedConfigured() bool {
 func (m *Models) setProviderItems() error {
 	t := m.com.Styles
 	cfg := m.com.Config()
+	if m.isManaged {
+		return m.setManagedModelItems()
+	}
 
 	var selectedItemID string
 	selectedType := m.modelType.Config()
@@ -519,6 +525,41 @@ func (m *Models) setProviderItems() error {
 		m.input.Placeholder = m.modelType.Placeholder()
 	}
 
+	return nil
+}
+
+func (m *Models) setManagedModelItems() error {
+	bundle, err := modelcatalog.LoadCached()
+	if err != nil {
+		return err
+	}
+	if bundle == nil || len(bundle.Models) == 0 {
+		return fmt.Errorf("models are not ready; run `4rged login --force`")
+	}
+	t := m.com.Styles
+	cfg := m.com.Config()
+	currentModel := cfg.Models[config.SelectedModelTypeLarge]
+	var selectedItemID string
+	var groups []ModelGroup
+	for _, providerGroup := range bundle.GroupedModels() {
+		group := NewModelGroup(t, providerGroup.Label, false)
+		for _, catalogModel := range providerGroup.Models {
+			item := NewManagedModelItem(t, catalogModel, bundle.ProviderLabel(catalogModel.Provider), m.modelType)
+			group.AppendItems(item)
+			if catalogModel.ID == currentModel.Model {
+				selectedItemID = item.ID()
+			}
+		}
+		if len(group.Items) > 0 {
+			groups = append(groups, group)
+		}
+	}
+	m.list.SetGroups(groups...)
+	m.list.SetSelectedItem(selectedItemID)
+	m.list.ScrollToTop()
+	if !m.isOnboarding {
+		m.input.Placeholder = "Choose a model"
+	}
 	return nil
 }
 
