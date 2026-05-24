@@ -59,31 +59,30 @@ func EnsureSelectedModels(cfg *config.Config) bool {
 		cfg.Models = map[config.SelectedModelType]config.SelectedModel{}
 	}
 
-	largeModel := provider.Models[0]
-	if current, ok := cfg.Models[config.SelectedModelTypeLarge]; ok {
-		if model := cfg.GetModel(ProviderID, current.Model); model != nil {
-			largeModel = *model
-		}
-	}
-	smallModel := largeModel
-	if current, ok := cfg.Models[config.SelectedModelTypeSmall]; ok {
-		if model := cfg.GetModel(ProviderID, current.Model); model != nil {
-			smallModel = *model
-		}
-	}
-	cfg.Models[config.SelectedModelTypeLarge] = config.SelectedModel{
-		Provider:        ProviderID,
-		Model:           largeModel.ID,
-		MaxTokens:       largeModel.DefaultMaxTokens,
-		ReasoningEffort: largeModel.DefaultReasoningEffort,
-	}
-	cfg.Models[config.SelectedModelTypeSmall] = config.SelectedModel{
-		Provider:        ProviderID,
-		Model:           smallModel.ID,
-		MaxTokens:       smallModel.DefaultMaxTokens,
-		ReasoningEffort: smallModel.DefaultReasoningEffort,
-	}
+	cfg.Models[config.SelectedModelTypeLarge] = ensureSelectedModel(cfg, config.SelectedModelTypeLarge, provider.Models[0])
+	cfg.Models[config.SelectedModelTypeSmall] = ensureSelectedModel(cfg, config.SelectedModelTypeSmall, provider.Models[0])
 	return true
+}
+
+func ensureSelectedModel(cfg *config.Config, modelType config.SelectedModelType, fallback catwalk.Model) config.SelectedModel {
+	selected, ok := cfg.Models[modelType]
+	if ok && selected.Provider == ProviderID {
+		if model := cfg.GetModel(ProviderID, selected.Model); model != nil {
+			if selected.MaxTokens == 0 {
+				selected.MaxTokens = model.DefaultMaxTokens
+			}
+			if selected.ReasoningEffort == "" {
+				selected.ReasoningEffort = model.DefaultReasoningEffort
+			}
+			return selected
+		}
+	}
+	return config.SelectedModel{
+		Provider:        ProviderID,
+		Model:           fallback.ID,
+		MaxTokens:       fallback.DefaultMaxTokens,
+		ReasoningEffort: fallback.DefaultReasoningEffort,
+	}
 }
 
 func roleDefault(bundle *modelcatalog.Bundle, runtime *runtimebundle.Bundle, role string) string {

@@ -45,6 +45,25 @@ func TestEnsureSelectedModelsPreservesValidSmallModel(t *testing.T) {
 	require.Equal(t, "openai/gpt-5.4-mini", cfg.Models[config.SelectedModelTypeSmall].Model)
 }
 
+func TestEnsureSelectedModelsPreservesSelectedAgentModel(t *testing.T) {
+	t.Parallel()
+
+	cfg := newManagedConfig(map[config.SelectedModelType]config.SelectedModel{
+		config.SelectedModelTypeLarge: {
+			Provider: ProviderID,
+			Model:    "anthropic/claude-sonnet-4.5",
+		},
+		config.SelectedModelTypeSmall: {
+			Provider: ProviderID,
+			Model:    "openai/gpt-5.4-mini",
+		},
+	})
+
+	require.True(t, EnsureSelectedModels(cfg))
+	require.Equal(t, "anthropic/claude-sonnet-4.5", cfg.Models[config.SelectedModelTypeLarge].Model)
+	require.Equal(t, "openai/gpt-5.4-mini", cfg.Models[config.SelectedModelTypeSmall].Model)
+}
+
 func TestRoleDefaultUsesRuntimeAgentAndSubAgentDefaults(t *testing.T) {
 	t.Parallel()
 
