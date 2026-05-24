@@ -164,9 +164,15 @@ func promptToGatewayMessages(prompt fantasy.Prompt) []controlplane.InferenceMess
 func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamPart, bool) {
 	switch event.Type {
 	case "text.delta":
-		return fantasy.StreamPart{Type: fantasy.StreamPartTypeTextDelta, Delta: event.Delta}, true
+		return fantasy.StreamPart{
+			Type:  fantasy.StreamPartTypeTextDelta,
+			Delta: event.Delta,
+		}, true
 	case "thinking.delta":
-		return fantasy.StreamPart{Type: fantasy.StreamPartTypeReasoningDelta, Delta: event.Delta}, true
+		return fantasy.StreamPart{
+			Type:  fantasy.StreamPartTypeReasoningDelta,
+			Delta: event.Delta,
+		}, true
 	case "tool.call":
 		return fantasy.StreamPart{
 			Type:          fantasy.StreamPartTypeToolCall,
@@ -175,9 +181,16 @@ func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamP
 			ToolCallInput: event.ArgumentsJSON,
 		}, true
 	case "run.completed":
-		return fantasy.StreamPart{Type: fantasy.StreamPartTypeFinish, FinishReason: fantasy.FinishReason(event.FinishReason), Usage: usage}, true
+		return fantasy.StreamPart{
+			Type:         fantasy.StreamPartTypeFinish,
+			FinishReason: fantasy.FinishReason(event.FinishReason),
+			Usage:        usage,
+		}, true
 	case "run.failed":
-		return fantasy.StreamPart{Type: fantasy.StreamPartTypeError, Error: fmt.Errorf("%s: %s", event.Code, event.Message)}, true
+		return fantasy.StreamPart{
+			Type:  fantasy.StreamPartTypeError,
+			Error: fmt.Errorf("%s: %s", event.Code, event.Message),
+		}, true
 	default:
 		return fantasy.StreamPart{}, false
 	}
