@@ -44,26 +44,12 @@ builds:
       - linux
       - darwin
       - windows
-      - freebsd
-      - openbsd
-      - netbsd
-      - android
     goarch:
       - amd64
       - arm64
-      - "386"
-      - arm
-    goarm:
-      - "7"
     ignore:
-      - goos: android
-        goarch: amd64
-      - goos: android
-        goarch: arm
-      - goos: android
-        goarch: "386"
       - goos: windows
-        goarch: arm
+        goarch: arm64
     ldflags:
       - -s -w -X github.com/neelworx-cpu/F4RGE-CLI/internal/version.Version={{.Version}}
     binary: 4rged
