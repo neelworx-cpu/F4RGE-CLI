@@ -1,6 +1,4 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-
-name: goreleaser
+name: release
 
 on:
   push:
@@ -8,16 +6,14 @@ on:
       - v*.*.*
 
 concurrency:
-  group: goreleaser
+  group: release
   cancel-in-progress: true
 
 permissions:
   contents: write
-  packages: write
-  id-token: write
 
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -27,16 +23,14 @@ jobs:
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: go.mod
-      - uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
-        with:
-          version: "nightly"
-          distribution: goreleaser-pro
-          args: release --clean
+      - name: Build installer artifacts
+        run: |
+          scripts/package-release.sh "${GITHUB_REF_NAME}"
+          scripts/package-release.sh latest
+      - name: Publish GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
-          NFPM_GPG_KEY: ${{ secrets.NFPM_GPG_KEY }}
-          NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
-          AUR_KEY: ${{ secrets.AUR_KEY }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 \
+            && gh release upload "${GITHUB_REF_NAME}" dist/cli/* --clobber \
+            || gh release create "${GITHUB_REF_NAME}" dist/cli/* --title "${GITHUB_REF_NAME}" --notes "F4RGE CLI ${GITHUB_REF_NAME}" --latest --verify-tag
