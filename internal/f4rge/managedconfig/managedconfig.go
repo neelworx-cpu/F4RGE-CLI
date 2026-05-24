@@ -9,8 +9,10 @@ import (
 	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 )
 
-const ProviderID = "f4rge-gateway"
-const AutoModelID = "auto"
+const (
+	ProviderID  = "f4rge-gateway"
+	AutoModelID = "auto"
+)
 
 func Apply(store *config.ConfigStore) bool {
 	session, err := f4rgesession.Load()
