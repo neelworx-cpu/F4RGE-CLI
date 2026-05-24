@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -100,7 +101,7 @@ func (c Client) RegisterRuntimeSession(session *f4rgesession.ManagedSession, req
 	if err != nil {
 		return nil, err
 	}
-	httpRequest, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func (c Client) StartCLIAuth(request RuntimeSessionRequest) (*CLIAuthStartRespon
 	if err != nil {
 		return nil, err
 	}
-	httpRequest, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func (c Client) GetJSON(session *f4rgesession.ManagedSession, path string, query
 		}
 	}
 	parsed.RawQuery = values.Encode()
-	httpRequest, err := http.NewRequest(http.MethodGet, parsed.String(), nil)
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, parsed.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func (c Client) GetJSONWithToken(token string, path string, query map[string]str
 		}
 	}
 	parsed.RawQuery = values.Encode()
-	httpRequest, err := http.NewRequest(http.MethodGet, parsed.String(), nil)
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, parsed.String(), nil)
 	if err != nil {
 		return err
 	}

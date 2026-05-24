@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -70,7 +71,7 @@ func (c Client) Embed(session *f4rgesession.ManagedSession, request EmbeddingReq
 	if err != nil {
 		return nil, err
 	}
-	httpRequest, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

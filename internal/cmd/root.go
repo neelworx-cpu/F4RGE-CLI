@@ -140,7 +140,7 @@ cat README.md | 4rged run "make this more glamorous" > GLAMOROUS_README.md
 		if _, err := program.Run(); err != nil {
 			event.Error(err)
 			slog.Error("TUI run error", "error", err)
-			return errors.New("4rged crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/neelworx-cpu/F4RGE-CLI/issues/new?template=bug.yml") //nolint:staticcheck
+			return errors.New("4rged crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/neelworx-cpu/F4RGE-CLI/issues/new?template=bug.yml")
 		}
 		return nil
 	},
