@@ -3,105 +3,58 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"slices"
-	"sort"
 	"strings"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/lipgloss/v2/tree"
 	"github.com/mattn/go-isatty"
-	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
+	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 	"github.com/spf13/cobra"
 )
 
 var modelsCmd = &cobra.Command{
 	Use:   "models",
-	Short: "List all available models from configured providers",
-	Long:  `List all available models from configured providers. Shows provider name and model IDs.`,
-	Example: `# List all available models
-f4rged models
+	Short: "List available F4RGE managed models",
+	Long: `List effective F4RGE managed models for the signed-in user.
+
+Local BYOK/provider models are not part of the managed F4RGE CLI product path.`,
+	Example: `# List available managed models
+4rged models
 
 # Search models
-f4rged models gpt5`,
+4rged models gpt`,
 	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := ResolveCwd(cmd)
+		session, err := f4rgesession.Load()
 		if err != nil {
 			return err
 		}
-
-		dataDir, _ := cmd.Flags().GetString("data-dir")
-		debug, _ := cmd.Flags().GetBool("debug")
-
-		cfg, err := config.Init(cwd, dataDir, debug)
-		if err != nil {
-			return err
+		if !f4rgesession.IsUsable(session) {
+			return fmt.Errorf("F4RGE sign-in is incomplete; run `4rged login --force`")
 		}
-
-		if !cfg.Config().IsConfigured() {
-			return fmt.Errorf("no providers configured - please run '4rged' to set up a provider interactively")
-		}
-
-		term := strings.ToLower(strings.Join(args, " "))
-		filter := func(p config.ProviderConfig, m catwalk.Model) bool {
-			for _, s := range []string{p.ID, p.Name, m.ID, m.Name} {
-				if term == "" || strings.Contains(strings.ToLower(s), term) {
-					return true
-				}
-			}
-			return false
-		}
-
-		var providerIDs []string
-		providerModels := make(map[string][]string)
-
-		for providerID, provider := range cfg.Config().Providers.Seq2() {
-			if provider.Disable {
-				continue
-			}
-			var found bool
-			for _, model := range provider.Models {
-				if !filter(provider, model) {
+		bundle, catalogErr := modelcatalog.Fetch(session)
+		if catalogErr == nil && bundle != nil && len(bundle.Models) > 0 {
+			term := strings.ToLower(strings.Join(args, " "))
+			for _, model := range bundle.Models {
+				haystack := strings.ToLower(strings.Join([]string{model.ID, model.Provider, model.ProviderModelID, model.Label, model.Description}, " "))
+				if term != "" && !strings.Contains(haystack, term) {
 					continue
 				}
-				providerModels[providerID] = append(providerModels[providerID], model.ID)
-				found = true
-			}
-			if !found {
-				continue
-			}
-			slices.Sort(providerModels[providerID])
-			providerIDs = append(providerIDs, providerID)
-		}
-		sort.Strings(providerIDs)
-
-		if len(providerIDs) == 0 && len(args) == 0 {
-			return fmt.Errorf("no enabled providers found")
-		}
-		if len(providerIDs) == 0 {
-			return fmt.Errorf("no enabled providers found matching %q", term)
-		}
-
-		if !isatty.IsTerminal(os.Stdout.Fd()) {
-			for _, providerID := range providerIDs {
-				for _, modelID := range providerModels[providerID] {
-					fmt.Println(providerID + "/" + modelID)
+				if !isatty.IsTerminal(os.Stdout.Fd()) {
+					fmt.Println(model.ID)
+					continue
 				}
+				fmt.Printf("%-28s %-12s %-16s %s\n", model.ID, model.Provider, model.RequestProfile.APIFamily, model.Label)
 			}
 			return nil
 		}
 
-		t := tree.New()
-		for _, providerID := range providerIDs {
-			providerNode := tree.Root(providerID)
-			for _, modelID := range providerModels[providerID] {
-				providerNode.Child(modelID)
-			}
-			t.Child(providerNode)
+		if session == nil {
+			fmt.Println("Sign in to F4RGE to load your managed model catalog.")
+			fmt.Println()
+			fmt.Println("Next step: run `4rged login`.")
+			return nil
 		}
-
-		cmd.Println(t)
-		return nil
+		return fmt.Errorf("could not load managed model catalog: %w", catalogErr)
 	},
 }
 

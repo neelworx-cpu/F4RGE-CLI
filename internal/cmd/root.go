@@ -63,6 +63,7 @@ func init() {
 	rootCmd.AddCommand(
 		runCmd,
 		dirsCmd,
+		doctorCmd,
 		projectsCmd,
 		updateProvidersCmd,
 		logsCmd,
@@ -71,6 +72,7 @@ func init() {
 		loginCmd,
 		statsCmd,
 		sessionCmd,
+		statusCmd,
 	)
 }
 

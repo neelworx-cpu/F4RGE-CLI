@@ -228,6 +228,59 @@ Recommended default:
 - Allow users to switch only among models their org allows.
 - Persist the user preference as a F4RGE model catalog ID, not as `provider/model/api_key`.
 
+### Current F4RGE Web Catalog Contract To Track
+
+The CLI should align with the Web/Platform API work instead of creating a separate catalog shape.
+
+Relevant current Web pieces:
+
+- `packages/platform-contracts/src/index.ts` exports `F4rgeModelCatalogEntry`, `F4rgeModelAccessPolicy`, `F4rgeBudgetPolicy`, `F4rgeRepositoryPolicy`, and `F4rgeEffectivePolicy`.
+- `apps/agents-api/src/app/api/models/route.ts` returns an effective catalog bundle for an authorized organization/team/project.
+- `apps/agents-api/src/lib/runtime/modelCatalog.ts` seeds cloud/runtime models and resolves scoped model access through `getEffectiveModelCatalogBundle`.
+- The current model endpoint maps bundle models to `id`, `provider`, `model`, `label`, `availability`, `capabilities`, `riskClass`, `metadata`, and `requestProfile`.
+
+CLI-side alignment:
+
+- Treat the Web model `id` as the persisted CLI model preference.
+- Display `label`, not raw provider/model IDs.
+- Use `availability`, `capabilities`, and `riskClass` for model dialog badges and disabled states.
+- Cache the full effective catalog bundle, not just flattened model rows.
+- Preserve `requestProfile` for gateway/runtime routing metadata, but do not expose provider plumbing to customers.
+- Include `organizationId`, optional `teamId`, optional `projectId`, and `surface=cli` when the Web endpoint supports CLI scoping.
+- Track `policy.version` or bundle version in `4rged status` and trace metadata.
+
+Minimum CLI model-cache shape:
+
+```json
+{
+  "organizationId": "org_...",
+  "teamId": null,
+  "projectId": null,
+  "surface": "cli",
+  "policyVersion": "policy_...",
+  "catalogVersion": "catalog_...",
+  "fetchedAt": "2026-05-23T00:00:00Z",
+  "expiresAt": "2026-05-23T01:00:00Z",
+  "models": [
+    {
+      "id": "4rge-2.0",
+      "label": "4RGE 2.0",
+      "availability": "available",
+      "capabilities": ["agent", "tools", "code", "reasoning"],
+      "riskClass": "standard",
+      "requestProfile": {
+        "apiFamily": "azure.chat",
+        "providerModelId": "Kimi-K2.6",
+        "deploymentName": "Kimi-K2.6"
+      }
+    }
+  ],
+  "blockedReasonsByModel": {}
+}
+```
+
+Open contract gap: current Web route uses `surface: "cloud"` internally. CLI should either receive a first-class `surface: "cli"` option or share a generic managed-edge surface that Desktop and CLI can both consume.
+
 ### Managed Provider Gateway
 
 The provider keys should live in F4RGE infrastructure, not customer terminals.

@@ -28,9 +28,9 @@ const (
 func (mt ModelType) String() string {
 	switch mt {
 	case ModelTypeLarge:
-		return "Large Task"
+		return "Agent"
 	case ModelTypeSmall:
-		return "Small Task"
+		return "Sub-agent"
 	default:
 		return "Unknown"
 	}
@@ -62,8 +62,8 @@ func (mt ModelType) Placeholder() string {
 
 const (
 	onboardingModelInputPlaceholder = "Find your fave"
-	largeModelInputPlaceholder      = "Choose a model for large, complex tasks"
-	smallModelInputPlaceholder      = "Choose a model for small, simple tasks"
+	largeModelInputPlaceholder      = "Choose a model for agent work"
+	smallModelInputPlaceholder      = "Choose a model for background work"
 )
 
 // ModelsID is the identifier for the model selection dialog.
@@ -75,6 +75,7 @@ const defaultModelsDialogMaxWidth = 73
 type Models struct {
 	com          *common.Common
 	isOnboarding bool
+	isManaged    bool
 
 	modelType ModelType
 	providers []catwalk.Provider
@@ -142,10 +143,19 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 	)
 	m.keyMap.Close = CloseKey
 
-	var err error
-	m.providers, err = config.Providers(m.com.Config())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get providers: %w", err)
+	if provider, ok := m.com.Config().Providers.Get("f4rge-gateway"); ok {
+		m.isManaged = true
+		m.providers = []catwalk.Provider{{
+			ID:     catwalk.InferenceProvider(provider.ID),
+			Name:   "F4RGE Models",
+			Models: provider.Models,
+		}}
+	} else {
+		var err error
+		m.providers, err = config.Providers(m.com.Config())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get providers: %w", err)
+		}
 	}
 
 	if err := m.setProviderItems(); err != nil {
@@ -203,7 +213,7 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 				ReAuthenticate: isEdit,
 			}
 		case key.Matches(msg, m.keyMap.Tab):
-			if m.isOnboarding {
+			if m.isOnboarding || m.isManaged {
 				break
 			}
 			if m.modelType == ModelTypeLarge {
@@ -269,11 +279,13 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	m.help.SetWidth(innerWidth)
 
 	rc := NewRenderContext(t, width)
-	rc.Title = "Switch Model"
-	rc.TitleInfo = m.modelTypeRadioView()
+	rc.Title = "Models"
+	if !m.isManaged {
+		rc.TitleInfo = m.modelTypeRadioView()
+	}
 
 	if m.isOnboarding {
-		titleText := t.Dialog.PrimaryText.Render("To start, let's choose a provider and model.")
+		titleText := t.Dialog.PrimaryText.Render("Choose a model available to your organization.")
 		rc.AddPart(titleText)
 	}
 
@@ -311,8 +323,10 @@ func (m *Models) ShortHelp() []key.Binding {
 	}
 	h := []key.Binding{
 		m.keyMap.UpDown,
-		m.keyMap.Tab,
 		m.keyMap.Select,
+	}
+	if !m.isManaged {
+		h = append(h, m.keyMap.Tab)
 	}
 	if m.isSelectedConfigured() {
 		h = append(h, m.keyMap.Edit)

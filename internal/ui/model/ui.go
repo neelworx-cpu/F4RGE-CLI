@@ -167,6 +167,8 @@ type (
 	themeChangedMsg struct {
 		theme string
 	}
+
+	f4rgeSignInCompletedMsg struct{}
 )
 
 type chatPane struct {
@@ -708,7 +710,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 
 	desiredState := uiLanding
 	desiredFocus := uiFocusEditor
-	if !com.Config().IsConfigured() {
+	if !ui.isManagedRuntimeReady() && !ui.canUseLegacyProviderConfig() {
 		desiredState = uiOnboarding
 	} else if n, _ := com.Workspace.ProjectNeedsInitialization(); n {
 		desiredState = uiInitialize
@@ -745,11 +747,6 @@ func newEditorTextarea(com *common.Common) textarea.Model {
 // Init initializes the UI model.
 func (m *UI) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	if m.state == uiOnboarding {
-		if cmd := m.openModelsDialog(); cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-	}
 	// load the user commands async
 	cmds = append(cmds, m.loadCustomCommands())
 	// load prompt history async
@@ -885,6 +882,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.applyTheme(styles.ThemeForMode(msg.theme))
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Switched to "+msg.theme+" theme")))
+	case f4rgeSignInCompletedMsg:
+		m.dialog.CloseDialog(dialog.F4RGEAuthID)
+		m.com.Config().SetupAgents()
+		if err := m.com.Workspace.InitCoderAgent(context.TODO()); err != nil {
+			cmds = append(cmds, util.ReportError(err))
+			break
+		}
+		m.setState(uiLanding, uiFocusEditor)
+		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Sign-in complete.")))
 	case pubsub.Event[notify.Notification]:
 		if cmd := m.handleAgentNotification(msg.Payload); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -1759,15 +1765,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		return tea.Batch(cmds...)
 	}
 
-	isOnboarding := m.state == uiOnboarding
-
 	switch msg := action.(type) {
 	// Generic dialog messages
 	case dialog.ActionClose:
-		if isOnboarding && m.dialog.ContainsDialog(dialog.ModelsID) {
-			break
-		}
-
 		if m.dialog.ContainsDialog(dialog.FilePickerID) {
 			defer fimage.ResetCache()
 		}
@@ -1776,12 +1776,6 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 
 		m.dialog.CloseFrontDialog()
-
-		if isOnboarding {
-			if cmd := m.openModelsDialog(); cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
 
 		if m.focus == uiFocusEditor {
 			cmds = append(cmds, m.textarea.Focus())
@@ -1856,6 +1850,10 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionCloseSplitPane:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.closeSplitPane(msg.PaneID))
+	case dialog.ActionOpenF4RGEAuth:
+		m.dialog.CloseDialog(dialog.F4RGEAuthID)
+		cmds = append(cmds, openF4RGEAuthURL)
+		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Opening F4RGE sign-in in your browser...")))
 	case dialog.ActionSummarize:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
@@ -2223,16 +2221,28 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			m.updateLayoutAndSize()
 			return true
 		case key.Matches(msg, m.keyMap.Commands):
+			if m.state == uiOnboarding {
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Sign in before using commands.")))
+				return true
+			}
 			if cmd := m.openCommandsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			return true
 		case key.Matches(msg, m.keyMap.Models):
+			if m.state == uiOnboarding {
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Models unlock after sign-in.")))
+				return true
+			}
 			if cmd := m.openModelsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			return true
 		case key.Matches(msg, m.keyMap.Sessions):
+			if m.state == uiOnboarding {
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Sessions unlock after sign-in.")))
+				return true
+			}
 			if cmd := m.openSessionsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
@@ -2297,9 +2307,17 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 
+	if m.state == uiOnboarding {
+		switch {
+		case key.Matches(msg, m.keyMap.Chat.Cancel):
+			return tea.Quit
+		default:
+			cmds = append(cmds, m.updateOnboardingView(msg)...)
+			return tea.Batch(cmds...)
+		}
+	}
+
 	switch m.state {
-	case uiOnboarding:
-		return tea.Batch(cmds...)
 	case uiInitialize:
 		cmds = append(cmds, m.updateInitializeView(msg)...)
 		return tea.Batch(cmds...)
@@ -2620,8 +2638,8 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	case uiOnboarding:
 		m.drawHeader(scr, layout.header)
 
-		// NOTE: Onboarding flow will be rendered as dialogs below, but
-		// positioned at the bottom left of the screen.
+		main := uv.NewStyledString(m.onboardingView())
+		main.Draw(scr, layout.main)
 
 	case uiInitialize:
 		m.drawHeader(scr, layout.header)
@@ -2752,9 +2770,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 func (m *UI) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
-	if !m.isTransparent {
-		v.BackgroundColor = m.com.Styles.Background
-	}
+	v.BackgroundColor = m.com.Styles.Background
 	v.MouseMode = tea.MouseModeCellMotion
 	v.ReportFocus = m.caps.ReportFocusEvents
 	v.WindowTitle = "4rged " + home.Short(m.com.Workspace.WorkingDir())

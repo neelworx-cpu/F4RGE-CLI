@@ -31,6 +31,9 @@ func (m *UI) landingView() string {
 	}
 
 	parts = append(parts, "", m.modelInfo(width))
+	if m.isManagedRuntimeReady() {
+		parts = append(parts, "", t.Dialog.SecondaryText.Render("Signed in. Your available models are ready."))
+	}
 	infoSection := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
 	var remainingHeightArea image.Rectangle

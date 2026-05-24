@@ -3,9 +3,12 @@ package agent
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/prompt"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/promptbundle"
+	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 )
 
 //go:embed templates/coder.md.tpl
@@ -18,7 +21,15 @@ var taskPromptTmpl []byte
 var initializePromptTmpl []byte
 
 func coderPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
-	systemPrompt, err := prompt.NewPrompt("coder", string(coderPromptTmpl), opts...)
+	template := string(coderPromptTmpl)
+	if session, err := f4rgesession.Load(); err == nil {
+		if bundle, fetchErr := promptbundle.Fetch(session); fetchErr == nil && bundle != nil {
+			if managed := strings.TrimSpace(bundle.RenderMode("agent")); managed != "" {
+				template = managed + "\n\n" + template
+			}
+		}
+	}
+	systemPrompt, err := prompt.NewPrompt("coder", template, opts...)
 	if err != nil {
 		return nil, err
 	}

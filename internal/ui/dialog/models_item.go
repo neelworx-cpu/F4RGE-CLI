@@ -44,7 +44,7 @@ func (m *ModelGroup) AppendItems(items ...*ModelItem) {
 // Render implements [list.Item].
 func (m *ModelGroup) Render(width int) string {
 	var configured string
-	if m.configured {
+	if m.configured && m.Title != "F4RGE Models" {
 		configuredIcon := m.t.ToolCallSuccess.Render()
 		configuredText := m.t.Dialog.Models.ConfiguredText.Render("Configured")
 		configured = configuredIcon + " " + configuredText

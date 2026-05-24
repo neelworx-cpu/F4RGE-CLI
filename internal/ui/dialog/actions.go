@@ -64,6 +64,7 @@ type (
 	ActionSplitChat                struct{}
 	ActionSplitChatNewSession      struct{}
 	ActionSplitChatExistingSession struct{}
+	ActionOpenF4RGEAuth            struct{}
 	ActionCloseSplitPane           struct {
 		PaneID int
 	}

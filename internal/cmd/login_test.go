@@ -19,3 +19,10 @@ func TestLoginCmd_ForceFlag(t *testing.T) {
 	require.NotNil(t, flag)
 	require.Equal(t, "f", flag.Shorthand)
 }
+
+func TestLoginCmd_DefaultsToF4RGE(t *testing.T) {
+	t.Parallel()
+
+	require.Contains(t, loginCmd.ValidArgs, "f4rge")
+	require.Contains(t, loginCmd.Short, "F4RGE")
+}

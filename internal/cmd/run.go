@@ -17,6 +17,7 @@ import (
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/client"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/format"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/proto"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/pubsub"
@@ -111,8 +112,8 @@ curl https://charm.land | 4rged run "Summarize this website"
 				sessionID = sess.ID
 			}
 
-			if !ws.Config.IsConfigured() {
-				return fmt.Errorf("no providers configured - please run '4rged' to set up a provider interactively")
+			if !ws.Config.IsConfigured() && !runtimebundle.Ready() {
+				return fmt.Errorf("4RGED is not signed in yet - run '4rged login' to connect F4RGE Auth and model catalog")
 			}
 
 			if verbose {
@@ -130,8 +131,8 @@ curl https://charm.land | 4rged run "Summarize this website"
 
 		event.AppInitialized()
 
-		if !ws.Config().IsConfigured() {
-			return fmt.Errorf("no providers configured - please run '4rged' to set up a provider interactively")
+		if !ws.Config().IsConfigured() && !runtimebundle.Ready() {
+			return fmt.Errorf("4RGED is not signed in yet - run '4rged login' to connect F4RGE Auth and model catalog")
 		}
 
 		if verbose {
@@ -146,8 +147,8 @@ curl https://charm.land | 4rged run "Summarize this website"
 func init() {
 	runCmd.Flags().BoolP("quiet", "q", false, "Hide spinner")
 	runCmd.Flags().BoolP("verbose", "v", false, "Show logs")
-	runCmd.Flags().StringP("model", "m", "", "Model to use. Accepts 'model' or 'provider/model' to disambiguate models with the same name across providers")
-	runCmd.Flags().String("small-model", "", "Small model to use. If not provided, uses the default small model for the provider")
+	runCmd.Flags().StringP("model", "m", "", "F4RGE model to use. Accepts Auto or an allowed model ID")
+	runCmd.Flags().String("small-model", "", "Internal/dev override for background model selection")
 	runCmd.Flags().StringP("session", "s", "", "Continue a previous session by ID")
 	runCmd.Flags().BoolP("continue", "C", false, "Continue the most recent session")
 	runCmd.MarkFlagsMutuallyExclusive("session", "continue")

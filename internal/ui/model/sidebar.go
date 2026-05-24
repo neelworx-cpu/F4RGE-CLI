@@ -15,6 +15,18 @@ import (
 // modelInfo renders the current model information including reasoning
 // settings and context usage/cost for the sidebar.
 func (m *UI) modelInfo(width int) string {
+	if m.isManagedRuntimeReady() && !m.com.Workspace.AgentIsReady() {
+		return common.ModelInfo(
+			m.com.Styles,
+			"Auto",
+			"Models ready",
+			"",
+			nil,
+			width,
+			m.hyperCredits,
+		)
+	}
+
 	model := m.selectedLargeModel()
 	reasoningInfo := ""
 	providerName := ""

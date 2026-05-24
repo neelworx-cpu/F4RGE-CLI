@@ -27,6 +27,8 @@ import (
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/db"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/format"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
@@ -87,6 +89,7 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 	messages := message.NewService(q)
 	files := history.NewService(q, conn)
 	cfg := store.Config()
+	managedconfig.Apply(store)
 	skipPermissionsRequests := store.Overrides().SkipPermissionRequests
 	var allowedTools []string
 	if cfg.Permissions != nil && cfg.Permissions.AllowedTools != nil {
@@ -129,7 +132,11 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 	)
 
 	// TODO: remove the concept of agent config, most likely.
-	if !cfg.IsConfigured() {
+	if !runtimebundle.Ready() && os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
+		slog.Warn("F4RGE runtime session not ready")
+		return app, nil
+	}
+	if !cfg.IsConfigured() && !runtimebundle.Ready() {
 		slog.Warn("No agent configuration found")
 		return app, nil
 	}
@@ -383,6 +390,9 @@ func (app *App) UpdateAgentModel(ctx context.Context) error {
 	if app.AgentCoordinator == nil {
 		return fmt.Errorf("agent configuration is missing")
 	}
+	if !managedconfig.EnsureSelectedModels(app.config.Config()) {
+		managedconfig.Apply(app.config)
+	}
 	return app.AgentCoordinator.UpdateModels(ctx)
 }
 
@@ -442,6 +452,14 @@ func (app *App) overrideModelsForNonInteractive(ctx context.Context, largeModel,
 // provider. Falls back to the large model if no default is found.
 func (app *App) GetDefaultSmallModel(providerID string) config.SelectedModel {
 	cfg := app.config.Config()
+	if providerID == managedconfig.ProviderID {
+		if !managedconfig.EnsureSelectedModels(cfg) {
+			managedconfig.Apply(app.config)
+		}
+		if model, ok := cfg.Models[config.SelectedModelTypeSmall]; ok {
+			return model
+		}
+	}
 	largeModelCfg := cfg.Models[config.SelectedModelTypeLarge]
 
 	// Find the provider in the known providers list to get its default small model.

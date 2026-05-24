@@ -2,12 +2,6 @@
 
 package notification
 
-import (
-	_ "embed"
-)
-
-//go:embed f4rged-icon-solo.png
-var icon []byte
-
-// Icon contains the embedded PNG icon data for desktop notifications.
-var Icon any = icon
+// Icon is currently empty until the F4RGE notification asset is generated for
+// all release targets.
+var Icon any = ""

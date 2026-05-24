@@ -11,6 +11,10 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/client"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/promptbundle"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
+	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 	"github.com/spf13/cobra"
 )
 
@@ -23,19 +27,22 @@ var (
 var logoutCmd = &cobra.Command{
 	Aliases: []string{"signout"},
 	Use:     "logout [platform]",
-	Short:   "Logout 4rged from a platform",
-	Long: `Logout 4rged from a specified platform, removing stored credentials.
-The platform should be provided as an argument.
-If no argument is given, a list of logged-in platforms will be shown.
-Available platforms are: hyper, copilot.`,
-	Example: `
-# Sign out from Charm Hyper
-f4rged logout hyper
+	Short:   "Sign out of F4RGE",
+	Long: `Sign out of F4RGE, removing locally stored managed session credentials.
 
-# Sign out from GitHub Copilot
-f4rged logout copilot
+Provider-specific logout modes remain available for internal or legacy
+development flows while the F4RGE Auth device flow is wired to the Web control
+plane.`,
+	Example: `
+# Sign out from F4RGE
+4rged logout
+
+# Legacy/internal provider logout
+4rged logout hyper
+4rged logout copilot
   `,
 	ValidArgs: []cobra.Completion{
+		"f4rge",
 		"hyper",
 		"copilot",
 		"github",
@@ -55,15 +62,9 @@ f4rged logout copilot
 			defer func() { _, _ = fmt.Fprintf(os.Stderr, ansi.ResetProgressBar) }()
 		}
 
-		var provider string
+		provider := "f4rge"
 		if len(args) == 0 {
-			provider, err = pickLoggedInProvider(c, ws.ID)
-			if err != nil {
-				return err
-			}
-			if provider == "" {
-				return nil
-			}
+			// Managed F4RGE is the default customer-facing path.
 		} else {
 			provider = args[0]
 		}
@@ -80,14 +81,33 @@ f4rged logout copilot
 		}
 
 		switch provider {
+		case "f4rge":
+			return logoutF4RGE()
 		case "hyper":
+			if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
+				return fmt.Errorf("provider-specific logout is disabled for F4RGE managed CLI")
+			}
 			return logoutHyper(c, ws.ID)
 		case "copilot", "github", "github-copilot":
+			if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
+				return fmt.Errorf("provider-specific logout is disabled for F4RGE managed CLI")
+			}
 			return logoutCopilot(c, ws.ID)
 		default:
 			return fmt.Errorf("unknown platform: %s", provider)
 		}
 	},
+}
+
+func logoutF4RGE() error {
+	if err := f4rgesession.Clear(); err != nil {
+		return err
+	}
+	_ = os.Remove(modelcatalog.Path())
+	_ = os.Remove(promptbundle.Path())
+	_ = os.Remove(runtimebundle.Path())
+	fmt.Println(logoutHeaderStyle.Render("Signed out of F4RGE."))
+	return nil
 }
 
 func logoutHyper(c *client.Client, wsID string) error {

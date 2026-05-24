@@ -6,15 +6,12 @@
     <a href="https://github.com/neelworx-cpu/F4RGE-CLI/actions"><img src="https://github.com/neelworx-cpu/F4RGE-CLI/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
 </p>
 
-<p align="center">Your new coding bestie, now available in your favourite terminal.<br />Your tools, your code, and your workflows, wired into your LLM of choice.</p>
-<p align="center">终端里的编程新搭档，<br />无缝接入你的工具、代码与工作流，全面兼容主流 LLM 模型。</p>
-
-<p align="center"><img width="800" alt="4RGED Demo" src="https://github.com/user-attachments/assets/58280caf-851b-470a-b6f7-d5c4ea8a1968" /></p>
+<p align="center">Your F4RGE coding agent in the terminal.<br />Your tools, your code, and your workflows, governed by your F4RGE account.</p>
 
 ## Features
 
-- **Multi-Model:** choose from a wide range of LLMs or add your own via OpenAI- or Anthropic-compatible APIs
-- **Flexible:** switch LLMs mid-session while preserving context
+- **Managed Models:** use the models enabled for your F4RGE organization
+- **Flexible:** switch allowed product models mid-session while preserving context
 - **Session-Based:** maintain multiple work sessions and contexts per project
 - **LSP-Enhanced:** 4RGED uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
@@ -26,8 +23,18 @@
 Install 4RGED with the F4RGE install script:
 
 ```bash
-curl -fsSL https://4rged.app/cli | sh
+curl https://cli.4rge.ai/install -fsS | bash
 ```
+
+On Windows PowerShell:
+
+```powershell
+iwr https://cli.4rge.ai/install.ps1 -useb | iex
+```
+
+The installer detects your OS and architecture, downloads the release artifact,
+verifies its checksum, installs `4rged` into a user-writable location, and
+prints the next command to run.
 
 Or download a packaged release:
 
@@ -36,6 +43,15 @@ Or download a packaged release:
 
 [releases]: https://github.com/neelworx-cpu/F4RGE-CLI/releases
 
+Release maintainers can generate installer artifacts with:
+
+```bash
+scripts/package-release.sh <version>
+```
+
+The script writes archives and `.sha256` files to `dist/cli/`, matching the
+installer route naming convention.
+
 
 > [!WARNING]
 > Productivity may increase when using 4RGED and you may find yourself nerd
@@ -43,58 +59,44 @@ Or download a packaged release:
 
 ## Getting Started
 
-The quickest way to get started is to grab an API key for your preferred
-provider such as Anthropic, OpenAI, Groq, OpenRouter, or Vercel AI Gateway and just start
-4RGED. You'll be prompted to enter your API key.
+The customer path is managed by F4RGE. Users should install the CLI, sign in,
+and start working. They should not need to choose raw providers, paste API keys,
+or configure Azure/OpenAI/Anthropic/Gemini credentials locally.
 
-That said, you can also set environment variables for preferred providers.
+```bash
+4rged login
+4rged status
+4rged
+```
 
-| Environment Variable        | Provider                                           |
-| --------------------------- | -------------------------------------------------- |
-| `HYPER_API_KEY`             | F4RGE Hyper                                        |
-| `ANTHROPIC_API_KEY`         | Anthropic                                          |
-| `OPENAI_API_KEY`            | OpenAI                                             |
-| `VERCEL_API_KEY`            | Vercel AI Gateway                                  |
-| `GEMINI_API_KEY`            | Google Gemini                                      |
-| `SYNTHETIC_API_KEY`         | Synthetic                                          |
-| `ZAI_API_KEY`               | Z.ai                                               |
-| `MINIMAX_API_KEY`           | MiniMax                                            |
-| `HF_TOKEN`                  | Hugging Face Inference                             |
-| `CEREBRAS_API_KEY`          | Cerebras                                           |
-| `OPENROUTER_API_KEY`        | OpenRouter                                         |
-| `IONET_API_KEY`             | io.net                                             |
-| `ALIBABA_SINGAPORE_API_KEY` | Alibaba (Singapore)                                |
-| `GROQ_API_KEY`              | Groq                                               |
-| `AVIAN_API_KEY`             | Avian                                              |
-| `OPENCODE_API_KEY`          | OpenCode Zen & Go                                  |
-| `VERTEXAI_PROJECT`          | Google Cloud VertexAI (Gemini)                     |
-| `VERTEXAI_LOCATION`         | Google Cloud VertexAI (Gemini)                     |
-| `AWS_ACCESS_KEY_ID`         | Amazon Bedrock (Claude)                            |
-| `AWS_SECRET_ACCESS_KEY`     | Amazon Bedrock (Claude)                            |
-| `AWS_REGION`                | Amazon Bedrock (Claude)                            |
-| `AWS_PROFILE`               | Amazon Bedrock (Custom Profile)                    |
-| `AWS_BEARER_TOKEN_BEDROCK`  | Amazon Bedrock                                     |
-| `AZURE_OPENAI_API_ENDPOINT` | Azure OpenAI models                                |
-| `AZURE_OPENAI_API_KEY`      | Azure OpenAI models (optional when using Entra ID) |
-| `AZURE_OPENAI_API_VERSION`  | Azure OpenAI models                                |
+Target first-run flow:
 
-### Subscriptions
+1. `4rged` detects that no F4RGE session is available.
+2. The TUI shows a F4RGE sign-in prompt.
+3. `4rged login` starts a browser/device login against F4RGE Auth.
+4. F4RGE resolves the user, organization, entitlements, model catalog, and
+   effective policy.
+5. 4RGED starts chat with the managed default model, usually `Auto`.
 
-If you prefer subscription-based usage, here are some plans that work well in
-4RGED:
+Managed model families:
 
-- [Synthetic](https://synthetic.new/pricing)
-- [GLM Coding Plan](https://z.ai/subscribe)
-- [Kimi Code](https://www.kimi.com/membership/pricing)
-- [MiniMax Coding Plan](https://platform.minimax.io/subscribe/coding-plan)
+- `Auto` - F4RGE-managed routing, recommended.
+- `GPT` - fast general coding and planning.
+- `Claude` - deep reasoning and long-horizon edits.
+- `Gemini` - large-context analysis.
+- `4RGE 2.0` - F4RGE tuned agent model.
+- `4RGE 1.5` - cost-efficient F4RGE model.
 
-### By the Way
+Useful setup checks:
 
-Is there a provider you’d like to see in 4RGED? Is there an existing model that needs an update?
+```bash
+4rged status
+4rged doctor
+4rged models
+```
 
-4RGED’s default model listing is managed in [Catwalk](https://github.com/charmbracelet/catwalk), a community-supported, open source repository of 4RGED-compatible models, and you’re welcome to contribute.
-
-<a href="https://github.com/charmbracelet/catwalk"><img width="174" height="174" alt="Catwalk Badge" src="https://github.com/user-attachments/assets/95b49515-fe82-4409-b10d-5beb0873787d" /></a>
+Provider keys, Azure deployments, and private model routes are configured by
+admins in F4RGE. They are not configured in the customer CLI.
 
 ## Configuration
 

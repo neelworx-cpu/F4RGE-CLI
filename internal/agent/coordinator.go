@@ -18,12 +18,15 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
+	gatewayprovider "github.com/neelworx-cpu/F4RGE-CLI/internal/agent/gateway"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/notify"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/prompt"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/hooks"
@@ -583,6 +586,18 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config
 func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Model, Model, error) {
+	if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
+		managedSession, err := f4rgesession.Load()
+		if err != nil {
+			return Model{}, Model{}, err
+		}
+		if !f4rgesession.IsUsable(managedSession) {
+			return Model{}, Model{}, fmt.Errorf("F4RGE managed runtime session required; run `4rged login`")
+		}
+		if !managedconfig.EnsureSelectedModels(c.cfg.Config()) {
+			managedconfig.Apply(c.cfg)
+		}
+	}
 	largeModelCfg, ok := c.cfg.Config().Models[config.SelectedModelTypeLarge]
 	if !ok {
 		return Model{}, Model{}, errLargeModelNotSelected
@@ -865,6 +880,9 @@ func (c *coordinator) isAnthropicThinking(model config.SelectedModel) bool {
 }
 
 func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model config.SelectedModel, isSubAgent bool) (fantasy.Provider, error) {
+	if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
+		return gatewayprovider.NewProvider(), nil
+	}
 	headers := maps.Clone(providerCfg.ExtraHeaders)
 	if headers == nil {
 		headers = make(map[string]string)
