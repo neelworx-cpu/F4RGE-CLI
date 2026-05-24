@@ -2,6 +2,7 @@ package managedconfig
 
 import (
 	"charm.land/catwalk/pkg/catwalk"
+
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
