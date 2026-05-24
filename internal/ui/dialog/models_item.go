@@ -160,9 +160,6 @@ func (m *ModelItem) Render(width int) string {
 	}
 	if m.managed != nil {
 		providerInfo = m.providerName
-		if m.managed.Description != "" {
-			providerInfo = m.managed.Description
-		}
 	}
 	itemStyles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,
