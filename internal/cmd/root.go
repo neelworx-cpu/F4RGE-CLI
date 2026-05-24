@@ -66,6 +66,7 @@ func init() {
 		doctorCmd,
 		projectsCmd,
 		updateProvidersCmd,
+		updateCmd,
 		logsCmd,
 		logoutCmd,
 		schemaCmd,

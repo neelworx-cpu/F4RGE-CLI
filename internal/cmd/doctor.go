@@ -51,8 +51,8 @@ var doctorCmd = &cobra.Command{
 		}
 		fmt.Println()
 		fmt.Println("Install/update")
-		fmt.Println("  installer: planned (`curl https://cli.4rge.ai/install -fsS | bash`)")
-		fmt.Println("  updates:   planned (signed artifacts and minimum-version policy)")
+		fmt.Println("  installer: ready (`curl https://4rged.ai/install -fLsS | bash`)")
+		fmt.Println("  updates:   available (`4rged update`)")
 		return nil
 	},
 }
