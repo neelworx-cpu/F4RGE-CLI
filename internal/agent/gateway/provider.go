@@ -196,5 +196,7 @@ func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamP
 	}
 }
 
-var _ fantasy.Provider = Provider{}
-var _ fantasy.LanguageModel = languageModel{}
+var (
+	_ fantasy.Provider      = Provider{}
+	_ fantasy.LanguageModel = languageModel{}
+)
