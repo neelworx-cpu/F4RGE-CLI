@@ -52,6 +52,19 @@ scripts/package-release.sh <version>
 The script writes archives and `.sha256` files to `dist/cli/`, matching the
 installer route naming convention.
 
+### Local Control-Plane Development
+
+When testing the CLI against local F4RGE Web services, run Platform API on
+`localhost:3007` and Authenticator on `localhost:3003`, then start 4RGED with:
+
+```bash
+./scripts/run-local-platform.sh
+```
+
+This sets `F4RGE_PLATFORM_URL=http://localhost:3007`,
+`F4RGE_AUTH_URL=http://localhost:3003/cli`, and isolated preview config/data
+directories under `/tmp`.
+
 
 > [!WARNING]
 > Productivity may increase when using 4RGED and you may find yourself nerd
