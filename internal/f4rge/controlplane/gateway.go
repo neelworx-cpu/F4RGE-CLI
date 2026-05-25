@@ -17,18 +17,34 @@ type InferenceMessage struct {
 	ToolCallID string `json:"toolCallId,omitempty"`
 }
 
+type InferenceTool struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	InputSchema map[string]any `json:"inputSchema,omitempty"`
+	Risk        string         `json:"risk,omitempty"`
+}
+
+type InferenceToolResult struct {
+	ToolCallID string         `json:"toolCallId"`
+	Name       string         `json:"name"`
+	Content    string         `json:"content"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
+}
+
 type InferenceRequest struct {
-	SchemaVersion  int                `json:"schemaVersion"`
-	RequestID      string             `json:"requestId"`
-	Surface        string             `json:"surface"`
-	OrganizationID string             `json:"organizationId"`
-	SessionID      string             `json:"sessionId,omitempty"`
-	RunID          string             `json:"runId,omitempty"`
-	ThreadID       string             `json:"threadId,omitempty"`
-	ModelID        string             `json:"modelId"`
-	PromptMode     string             `json:"promptMode"`
-	Messages       []InferenceMessage `json:"messages"`
-	Metadata       map[string]any     `json:"metadata,omitempty"`
+	SchemaVersion  int                   `json:"schemaVersion"`
+	RequestID      string                `json:"requestId"`
+	Surface        string                `json:"surface"`
+	OrganizationID string                `json:"organizationId"`
+	SessionID      string                `json:"sessionId,omitempty"`
+	RunID          string                `json:"runId,omitempty"`
+	ThreadID       string                `json:"threadId,omitempty"`
+	ModelID        string                `json:"modelId"`
+	PromptMode     string                `json:"promptMode"`
+	Messages       []InferenceMessage    `json:"messages"`
+	Tools          []InferenceTool       `json:"tools,omitempty"`
+	ToolResults    []InferenceToolResult `json:"toolResults,omitempty"`
+	Metadata       map[string]any        `json:"metadata,omitempty"`
 }
 
 type InferenceSmokeResult struct {
@@ -99,7 +115,11 @@ func (c Client) StreamInference(ctx context.Context, session *f4rgesession.Manag
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Authorization", "Bearer "+session.AccessToken)
 
-	response, err := c.HTTP.Do(httpRequest)
+	client := c.Stream
+	if client == nil {
+		client = http.DefaultClient
+	}
+	response, err := client.Do(httpRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -6,10 +6,10 @@ project_name: 4rged
 
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
-  license: "FSL-1.1-MIT"
+  license: "F4RGE-FSL-MIT-Future"
   homepage: "https://4rged.app/cli"
-  description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
-  full_description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
+  description: "F4RGE's AI coding agent for developer workflows."
+  full_description: "F4RGE's AI coding agent for developer workflows."
   maintainers:
     - "Neel Worx <neel@4rged.app>"
 
@@ -246,7 +246,7 @@ nix:
     commit_author:
       name: "4RGED"
       email: "release@4rged.app"
-    license: fsl11Mit
+    license: unfree
     formatter: nixfmt
     skip_upload: "{{ with .Prerelease }}true{{ end }}"
     extra_install: |-

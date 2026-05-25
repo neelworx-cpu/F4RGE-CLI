@@ -10,6 +10,8 @@ import (
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/message"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/anim"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/attachments"
@@ -347,13 +349,27 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 		model = &catwalk.Model{Name: "Unknown Model"}
 	}
 	modelFormatted := a.sty.Messages.AssistantInfoModel.Render(model.Name)
-	providerName := a.message.Provider
-	if providerConfig, ok := a.cfg.Providers.Get(a.message.Provider); ok {
-		providerName = providerConfig.Name
-	}
+	providerName := a.providerName()
 	provider := a.sty.Messages.AssistantInfoProvider.Render(fmt.Sprintf("via %s", providerName))
 	assistant := fmt.Sprintf("%s %s %s %s", icon, modelFormatted, provider, infoMsg)
 	return common.Section(a.sty, assistant, width)
+}
+
+func (a *AssistantInfoItem) providerName() string {
+	if a.message.Provider == managedconfig.ProviderID {
+		if a.message.Model == managedconfig.AutoModelID {
+			return "4RGED"
+		}
+		if bundle, err := modelcatalog.LoadCached(); err == nil && bundle != nil {
+			if catalogModel, ok := bundle.ModelByID(a.message.Model); ok {
+				return bundle.ProviderLabel(catalogModel.Provider)
+			}
+		}
+	}
+	if providerConfig, ok := a.cfg.Providers.Get(a.message.Provider); ok {
+		return providerConfig.Name
+	}
+	return a.message.Provider
 }
 
 // cappedMessageWidth returns the maximum width for message content for readability.

@@ -223,7 +223,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 	var wg sync.WaitGroup
 	// Generate title if first message.
-	if len(msgs) == 0 {
+	if len(msgs) == 0 && largeModel.ModelCfg.Provider != "f4rge-gateway" {
 		titleCtx := ctx // Copy to avoid race with ctx reassignment below.
 		wg.Go(func() {
 			a.generateTitle(titleCtx, call.SessionID, call.Prompt)
@@ -1052,10 +1052,10 @@ func (a *sessionAgent) generateTitle(ctx context.Context, sessionID string, user
 		if err == nil {
 			slog.Debug("Generated title with large model")
 		} else {
-			// Welp, the large model didn't work either. Use the default
-			// session name and return.
+			// Welp, the large model didn't work either. Use a deterministic
+			// fallback title from the first user message and return.
 			slog.Error("Error generating title with large model", "err", err)
-			saveErr := a.sessions.Rename(ctx, sessionID, DefaultSessionName)
+			saveErr := a.sessions.Rename(ctx, sessionID, fallbackTitle(userPrompt))
 			if saveErr != nil {
 				slog.Error("Failed to save session title", "error", saveErr)
 			}
@@ -1064,10 +1064,10 @@ func (a *sessionAgent) generateTitle(ctx context.Context, sessionID string, user
 	}
 
 	if resp == nil {
-		// Actually, we didn't get a response so we can't. Use the default
-		// session name and return.
+		// Actually, we didn't get a response so we can't. Use a deterministic
+		// fallback title from the first user message and return.
 		slog.Error("Response is nil; can't generate title")
-		saveErr := a.sessions.Rename(ctx, sessionID, DefaultSessionName)
+		saveErr := a.sessions.Rename(ctx, sessionID, fallbackTitle(userPrompt))
 		if saveErr != nil {
 			slog.Error("Failed to save session title", "error", saveErr)
 		}
@@ -1419,6 +1419,18 @@ func (a *sessionAgent) workaroundProviderMediaLimitations(messages []fantasy.Mes
 	}
 
 	return convertedMessages
+}
+
+func fallbackTitle(prompt string) string {
+	title := strings.Join(strings.Fields(prompt), " ")
+	if title == "" {
+		return DefaultSessionName
+	}
+	runes := []rune(title)
+	if len(runes) > 50 {
+		return strings.TrimSpace(string(runes[:50]))
+	}
+	return title
 }
 
 // buildSummaryPrompt constructs the prompt text for session summarization.

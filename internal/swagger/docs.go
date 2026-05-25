@@ -14,8 +14,8 @@ const docTemplate = `{
             "url": "https://4rged.app"
         },
         "license": {
-            "name": "MIT",
-            "url": "https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE"
+            "name": "F4RGE Functional Source License",
+            "url": "https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE.md"
         },
         "version": "{{.Version}}"
     },
@@ -3766,7 +3766,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/v1",
 	Schemes:          []string{},
 	Title:            "4rged API",
-	Description:      "4rged is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.",
+	Description:      "4rged is F4RGE's AI coding agent. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

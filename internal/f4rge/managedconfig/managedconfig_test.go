@@ -84,6 +84,37 @@ func TestRoleDefaultUsesRuntimeAgentAndSubAgentDefaults(t *testing.T) {
 	require.Equal(t, "small-model", roleDefault(bundle, runtime, "subAgent"))
 }
 
+func TestApplyManagedSelectionsPreservesSelectedAgentModel(t *testing.T) {
+	t.Parallel()
+
+	cfg := newManagedConfig(map[config.SelectedModelType]config.SelectedModel{
+		config.SelectedModelTypeLarge: {
+			Provider: ProviderID,
+			Model:    "anthropic/claude-sonnet-4.5",
+		},
+		config.SelectedModelTypeSmall: {
+			Provider: ProviderID,
+			Model:    "openai/gpt-5.4-mini",
+		},
+	})
+	provider, ok := cfg.Providers.Get(ProviderID)
+	require.True(t, ok)
+
+	applyManagedSelections(cfg, &modelcatalog.Bundle{
+		Models: []modelcatalog.Model{
+			{ID: "f4rge/4rge-2.5", RuntimeRoles: []string{"agent"}},
+			{ID: "openai/gpt-5.4-mini", RuntimeRoles: []string{"subAgent"}},
+		},
+		Defaults: modelcatalog.Defaults{
+			Agent:    "f4rge/4rge-2.5",
+			SubAgent: "openai/gpt-5.4-mini",
+		},
+	}, nil, provider.Models)
+
+	require.Equal(t, "anthropic/claude-sonnet-4.5", cfg.Models[config.SelectedModelTypeLarge].Model)
+	require.Equal(t, "openai/gpt-5.4-mini", cfg.Models[config.SelectedModelTypeSmall].Model)
+}
+
 func newManagedConfig(models map[config.SelectedModelType]config.SelectedModel) *config.Config {
 	providers := csync.NewMap[string, config.ProviderConfig]()
 	providers.Set(ProviderID, config.ProviderConfig{

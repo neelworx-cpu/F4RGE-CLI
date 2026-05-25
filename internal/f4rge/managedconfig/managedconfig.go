@@ -54,12 +54,19 @@ func Apply(store *config.ConfigStore) bool {
 	if cfg.Models == nil {
 		cfg.Models = map[config.SelectedModelType]config.SelectedModel{}
 	}
-	largeModel := roleDefault(bundle, runtime, "agent")
-	smallModel := roleDefault(bundle, runtime, "subAgent")
-	cfg.Models[config.SelectedModelTypeLarge] = selectedModel(largeModel, models)
-	cfg.Models[config.SelectedModelTypeSmall] = selectedModel(smallModel, models)
+	applyManagedSelections(cfg, bundle, runtime, models)
 	cfg.SetupAgents()
 	return true
+}
+
+func applyManagedSelections(cfg *config.Config, bundle *modelcatalog.Bundle, runtime *runtimebundle.Bundle, models []catwalk.Model) {
+	if cfg.Models == nil {
+		cfg.Models = map[config.SelectedModelType]config.SelectedModel{}
+	}
+	largeFallback := selectedModel(roleDefault(bundle, runtime, "agent"), models)
+	smallFallback := selectedModel(roleDefault(bundle, runtime, "subAgent"), models)
+	cfg.Models[config.SelectedModelTypeLarge] = ensureSelectedModel(cfg, config.SelectedModelTypeLarge, largeFallback)
+	cfg.Models[config.SelectedModelTypeSmall] = ensureSelectedModel(cfg, config.SelectedModelTypeSmall, smallFallback)
 }
 
 func EnsureSelectedModels(cfg *config.Config) bool {
@@ -71,12 +78,13 @@ func EnsureSelectedModels(cfg *config.Config) bool {
 		cfg.Models = map[config.SelectedModelType]config.SelectedModel{}
 	}
 
-	cfg.Models[config.SelectedModelTypeLarge] = ensureSelectedModel(cfg, config.SelectedModelTypeLarge, provider.Models[0])
-	cfg.Models[config.SelectedModelTypeSmall] = ensureSelectedModel(cfg, config.SelectedModelTypeSmall, provider.Models[0])
+	fallback := selectedModel(provider.Models[0].ID, provider.Models)
+	cfg.Models[config.SelectedModelTypeLarge] = ensureSelectedModel(cfg, config.SelectedModelTypeLarge, fallback)
+	cfg.Models[config.SelectedModelTypeSmall] = ensureSelectedModel(cfg, config.SelectedModelTypeSmall, fallback)
 	return true
 }
 
-func ensureSelectedModel(cfg *config.Config, modelType config.SelectedModelType, fallback catwalk.Model) config.SelectedModel {
+func ensureSelectedModel(cfg *config.Config, modelType config.SelectedModelType, fallback config.SelectedModel) config.SelectedModel {
 	selected, ok := cfg.Models[modelType]
 	if ok && selected.Provider == ProviderID {
 		if model := cfg.GetModel(ProviderID, selected.Model); model != nil {
@@ -91,9 +99,9 @@ func ensureSelectedModel(cfg *config.Config, modelType config.SelectedModelType,
 	}
 	return config.SelectedModel{
 		Provider:        ProviderID,
-		Model:           fallback.ID,
-		MaxTokens:       fallback.DefaultMaxTokens,
-		ReasoningEffort: fallback.DefaultReasoningEffort,
+		Model:           fallback.Model,
+		MaxTokens:       fallback.MaxTokens,
+		ReasoningEffort: fallback.ReasoningEffort,
 	}
 }
 

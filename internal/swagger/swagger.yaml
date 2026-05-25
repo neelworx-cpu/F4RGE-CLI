@@ -811,12 +811,12 @@ info:
   contact:
     name: F4RGE
     url: https://4rged.app
-  description: 4rged is a terminal-based AI coding assistant. This API is served over
+  description: 4rged is F4RGE's AI coding agent. This API is served over
     a Unix socket (or Windows named pipe) and provides programmatic access to workspaces,
     sessions, agents, LSP, MCP, and more.
   license:
-    name: MIT
-    url: https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE
+    name: F4RGE Functional Source License
+    url: https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE.md
   title: 4rged API
   version: "1.0"
 paths:

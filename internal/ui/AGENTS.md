@@ -9,7 +9,7 @@
 - Never do IO or expensive work in `Update`; always use a `tea.Cmd`.
 - Never change the model state inside of a command. Use messages and update
   the state in the main `Update` loop.
-- Use the `github.com/charmbracelet/x/ansi` package for any string
+- Use the repository's ANSI-safe string helpers/package for any string
   manipulation that might involve ANSI codes. Do not manipulate ANSI strings
   at byte level! Some useful functions:
   - `ansi.Cut`
@@ -23,7 +23,7 @@
 
 The UI uses a **hybrid rendering** approach:
 
-1. **Screen-based (Ultraviolet)**: The top-level `UI` model creates a
+1. **Screen-based**: The top-level `UI` model creates a
    `uv.ScreenBuffer`, and components draw into sub-regions using
    `uv.NewStyledString(str).Draw(scr, rect)`. Layout is rectangle-based via
    a `uiLayout` struct with fields like `layout.header`, `layout.main`,
@@ -31,11 +31,11 @@ The UI uses a **hybrid rendering** approach:
 2. **String-based**: Sub-components like `list.List` and `completions` render
    to strings, which are painted onto the screen buffer.
 3. **`View()`** creates the screen buffer, calls `Draw()`, then
-   `canvas.Render()` flattens it to a string for Bubble Tea.
+   `canvas.Render()` flattens it to a string for the terminal runtime.
 
 ### Main Model (`model/ui.go`)
 
-The `UI` struct is the top-level Bubble Tea model. Key fields:
+The `UI` struct is the top-level terminal model. Key fields:
 
 - `width`, `height` — terminal dimensions
 - `layout uiLayout` — computed layout rectangles
@@ -55,7 +55,7 @@ Keep most logic and state here. This is where:
 
 ### Centralized Message Handling
 
-The `UI` model is the **sole Bubble Tea model**. Sub-components (`Chat`,
+The `UI` model is the **sole terminal event model**. Sub-components (`Chat`,
 `List`, `Attachments`, `Completions`, etc.) do not participate in the
 standard Elm architecture message loop. They are stateful structs with
 imperative methods that the main model calls directly:
@@ -65,7 +65,7 @@ imperative methods that the main model calls directly:
   `SetMessages()`, `Animate()`.
 - **`Attachments`** and **`Completions`** have non-standard `Update`
   signatures (e.g., returning `bool` for "consumed") that act as guards, not
-  as full Bubble Tea models.
+  as full terminal event models.
 - **Sidebar** is not its own model: it's a `drawSidebar()` method on `UI`.
 
 When writing new components, follow this pattern:

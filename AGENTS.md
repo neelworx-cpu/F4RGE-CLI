@@ -2,12 +2,10 @@
 
 ## Project Overview
 
-4RGED is a terminal-based AI coding assistant built in Go by
-[Charm](https://charm.land). It connects to LLMs and gives them tools to read,
-write, and execute code. It supports multiple providers (Anthropic, OpenAI,
-Gemini, Bedrock, Copilot, Hyper, MiniMax, Vercel, and more), integrates with
-LSPs for code intelligence, and supports extensibility via MCP servers and
-agent skills.
+4RGED is F4RGE's AI coding agent. It connects F4RGE-managed models to local
+tools that read, write, and execute code. It integrates with LSPs for code
+intelligence, supports MCP servers and agent skills, and routes model access
+through F4RGE account policy rather than customer-managed provider keys.
 
 The module path is `github.com/neelworx-cpu/F4RGE-CLI`.
 
@@ -40,7 +38,7 @@ internal/
     sql/                           Raw SQL queries (consumed by sqlc)
     migrations/                    Schema migrations
   lsp/                             LSP client manager, auto-discovery, on-demand startup
-  ui/                              Bubble Tea v2 TUI (see internal/ui/AGENTS.md)
+  ui/                              Terminal UI (see internal/ui/AGENTS.md)
   permission/                      Tool permission checking and allow-lists
   skills/                          Skill file discovery and loading
   shell/                           Bash command execution with background job support
@@ -50,15 +48,14 @@ internal/
   history/                         Prompt history
 ```
 
-### Key Dependency Roles
+### Key Internal Roles
 
-- **`charm.land/fantasy`**: LLM provider abstraction layer. Handles protocol
-  differences between Anthropic, OpenAI, Gemini, etc. Used in `internal/app`
-  and `internal/agent`.
-- **`charm.land/bubbletea/v2`**: TUI framework powering the interactive UI.
-- **`charm.land/lipgloss/v2`**: Terminal styling.
-- **`charm.land/glamour/v2`**: Markdown rendering in the terminal.
-- **`charm.land/catwalk`**: Snapshot/golden-file testing for TUI components.
+- **Provider abstraction layer**: Handles protocol differences between model
+  routes and is used in `internal/app` and `internal/agent`.
+- **Terminal UI framework**: Powers the interactive chat interface.
+- **Terminal styling and markdown rendering**: Drives the CLI visual system.
+- **Model metadata types**: Still used internally while managed F4RGE catalog
+  delivery becomes the customer-facing source of truth.
 - **`sqlc`**: Generates Go code from SQL queries in `internal/db/sql/`.
 
 ### Key Patterns

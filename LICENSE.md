@@ -6,7 +6,7 @@ FSL-1.1-MIT
 
 ## Notice
 
-Copyright 2025-2026 Charmbracelet, Inc.
+Copyright 2026 F4RGE.
 
 ## Terms and Conditions
 
@@ -113,7 +113,7 @@ SOFTWARE.
 
 MIT License
 
-Copyright (c) 2025-03-21 - 2025-05-30 Kujtim Hoxha
+Copyright (c) 2026 F4RGE.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -16,7 +16,7 @@
 - **LSP-Enhanced:** 4RGED uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Works Everywhere:** first-class support in every terminal on macOS, Linux, Windows (PowerShell and WSL), Android, FreeBSD, OpenBSD, and NetBSD
-- **Industrial Grade:** built on proven terminal UI foundations and tuned for F4RGE agentic workflows
+- **Industrial Grade:** tuned for F4RGE agentic workflows
 
 ## Installation
 
@@ -660,11 +660,9 @@ config:
 
 ## Provider Auto-Updates
 
-By default, 4RGED automatically checks for the latest and greatest list of
-providers and models from [Catwalk](https://github.com/charmbracelet/catwalk),
-the open source 4RGED provider database. This means that when new providers and
-models are available, or when model metadata changes, 4RGED automatically
-updates your local configuration.
+Customer builds receive model availability from the F4RGE model catalog after
+sign-in. Legacy provider auto-updates are only relevant to development or
+compatibility builds that explicitly enable local provider configuration.
 
 ### Disabling automatic provider updates
 
@@ -696,10 +694,10 @@ Manually updating providers is possible with the `4rged update-providers`
 command:
 
 ```bash
-# Update providers remotely from Catwalk.
+# Update providers from the default legacy provider source.
 4rged update-providers
 
-# Update providers from a custom Catwalk base URL.
+# Update providers from a custom legacy provider base URL.
 4rged update-providers https://example.com/
 
 # Update providers from a local file.
@@ -765,4 +763,4 @@ See the [contributing guide](https://github.com/neelworx-cpu/F4RGE-CLI?tab=contr
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/neelworx-cpu/F4RGE-CLI/raw/main/LICENSE.md)
+[F4RGE Functional Source License with MIT future grant](https://github.com/neelworx-cpu/F4RGE-CLI/raw/main/LICENSE.md)

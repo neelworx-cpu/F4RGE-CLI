@@ -2,11 +2,11 @@
 //
 //	@title			4rged API
 //	@version		1.0
-//	@description	4rged is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
+//	@description	4rged is F4RGE's AI coding agent. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
 //	@contact.name	F4RGE
 //	@contact.url	https://4rged.app
-//	@license.name	MIT
-//	@license.url	https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE
+//	@license.name	F4RGE Functional Source License
+//	@license.url	https://github.com/neelworx-cpu/F4RGE-CLI/blob/main/LICENSE.md
 //	@BasePath		/v1
 package main
 

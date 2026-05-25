@@ -20,6 +20,7 @@ const defaultPlatformURL = "https://api.4rged.ai"
 type Client struct {
 	BaseURL string
 	HTTP    *http.Client
+	Stream  *http.Client
 }
 
 type RuntimeSessionRequest struct {
@@ -74,6 +75,7 @@ func New() Client {
 	return Client{
 		BaseURL: baseURL,
 		HTTP:    &http.Client{Timeout: 30 * time.Second},
+		Stream:  &http.Client{},
 	}
 }
 

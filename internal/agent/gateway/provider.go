@@ -95,6 +95,8 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 		ModelID:        m.modelID,
 		PromptMode:     "agent",
 		Messages:       promptToGatewayMessages(call.Prompt),
+		Tools:          toolsToGatewayTools(call.Tools),
+		ToolResults:    promptToGatewayToolResults(call.Prompt),
 	}
 	body, err := controlplane.New().StreamInference(ctx, session, request)
 	if err != nil {
@@ -102,6 +104,7 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 	}
 	return func(yield func(fantasy.StreamPart) bool) {
 		defer body.Close()
+		emittedContent := false
 		var usage fantasy.Usage
 		scanner := bufio.NewScanner(body)
 		for scanner.Scan() {
@@ -126,9 +129,19 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 			if ok && !yield(part) {
 				return
 			}
+			if ok && (part.Type == fantasy.StreamPartTypeTextDelta || part.Type == fantasy.StreamPartTypeToolCall) {
+				emittedContent = true
+			}
 		}
 		if err := scanner.Err(); err != nil && err != io.EOF {
 			yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeError, Error: err})
+			return
+		}
+		if !emittedContent {
+			yield(fantasy.StreamPart{
+				Type:  fantasy.StreamPartTypeError,
+				Error: fmt.Errorf("F4RGE Gateway completed without text or tool calls"),
+			})
 		}
 	}, nil
 }
@@ -139,6 +152,33 @@ func (m languageModel) GenerateObject(context.Context, fantasy.ObjectCall) (*fan
 
 func (m languageModel) StreamObject(context.Context, fantasy.ObjectCall) (fantasy.ObjectStreamResponse, error) {
 	return nil, fmt.Errorf("F4RGE Gateway object streaming is not implemented")
+}
+
+func toolsToGatewayTools(tools []fantasy.Tool) []controlplane.InferenceTool {
+	result := make([]controlplane.InferenceTool, 0, len(tools))
+	for _, tool := range tools {
+		switch t := tool.(type) {
+		case fantasy.FunctionTool:
+			result = append(result, controlplane.InferenceTool{
+				Name:        t.Name,
+				Description: t.Description,
+				InputSchema: t.InputSchema,
+			})
+		case *fantasy.FunctionTool:
+			if t != nil {
+				result = append(result, controlplane.InferenceTool{
+					Name:        t.Name,
+					Description: t.Description,
+					InputSchema: t.InputSchema,
+				})
+			}
+		default:
+			if tool.GetName() != "" {
+				result = append(result, controlplane.InferenceTool{Name: tool.GetName()})
+			}
+		}
+	}
+	return result
 }
 
 func promptToGatewayMessages(prompt fantasy.Prompt) []controlplane.InferenceMessage {
@@ -159,6 +199,47 @@ func promptToGatewayMessages(prompt fantasy.Prompt) []controlplane.InferenceMess
 		})
 	}
 	return messages
+}
+
+func promptToGatewayToolResults(prompt fantasy.Prompt) []controlplane.InferenceToolResult {
+	var results []controlplane.InferenceToolResult
+	for _, msg := range prompt {
+		for _, part := range msg.Content {
+			result, ok := fantasy.AsMessagePart[fantasy.ToolResultPart](part)
+			if !ok {
+				continue
+			}
+			results = append(results, controlplane.InferenceToolResult{
+				ToolCallID: result.ToolCallID,
+				Content:    toolResultText(result.Output),
+			})
+		}
+	}
+	return results
+}
+
+func toolResultText(result fantasy.ToolResultOutputContent) string {
+	switch value := result.(type) {
+	case fantasy.ToolResultOutputContentText:
+		return value.Text
+	case *fantasy.ToolResultOutputContentText:
+		if value != nil {
+			return value.Text
+		}
+	case fantasy.ToolResultOutputContentError:
+		return value.Error.Error()
+	case *fantasy.ToolResultOutputContentError:
+		if value != nil && value.Error != nil {
+			return value.Error.Error()
+		}
+	case fantasy.ToolResultOutputContentMedia:
+		return value.Text
+	case *fantasy.ToolResultOutputContentMedia:
+		if value != nil {
+			return value.Text
+		}
+	}
+	return ""
 }
 
 func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamPart, bool) {

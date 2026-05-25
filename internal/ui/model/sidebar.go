@@ -39,7 +39,7 @@ func (m *UI) modelInfo(width int) string {
 	if model != nil {
 		if model.ModelCfg.Provider == managedconfig.ProviderID && model.ModelCfg.Model == managedconfig.AutoModelID {
 			modelName = "Auto"
-			providerName = "Best available model"
+			providerName = "4RGED"
 		}
 		if model.ModelCfg.Provider == managedconfig.ProviderID && model.ModelCfg.Model != managedconfig.AutoModelID {
 			if bundle, err := modelcatalog.LoadCached(); err == nil && bundle != nil {

@@ -78,7 +78,7 @@ The current fork still has the original open-provider shape:
 
 - `README.md` says users should get an API key, start `4rged`, and enter it interactively.
 - `README.md` documents many provider environment variables, including `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `AZURE_OPENAI_API_KEY`, Bedrock credentials, OpenRouter, Groq, and others.
-- `internal/config/provider.go` loads providers from Catwalk/embedded provider catalogs and supports provider auto-update.
+- `internal/config/provider.go` loads providers from legacy embedded provider catalogs and supports provider auto-update.
 - `internal/config/load.go` merges known providers with local provider overrides, environment-expanded API keys, base URLs, headers, model lists, Azure settings, Vertex settings, and custom providers.
 - `internal/ui/dialog/models.go` opens a "Switch Model" dialog where users select a provider/model.
 - `internal/ui/dialog/api_key_input.go` asks users to "Enter your API key...", verifies it against the provider, and writes it to global configuration.
@@ -208,7 +208,7 @@ The local UI should not expose:
 - provider base URLs
 - provider-specific headers
 - Azure deployment names
-- raw Catwalk provider IDs
+- raw provider catalog IDs
 - OpenAI-compatible custom provider setup
 - Bedrock/Vertex credential configuration
 
@@ -336,7 +336,7 @@ Relevant existing platform pieces:
 
 ## Existing 4RGED Agentic Architecture Inventory
 
-This section maps the inherited Charm/4RGED architecture so new F4RGE capabilities can be planned without discarding the valuable local agent edge. The current CLI is not just a chat UI around an LLM. It is already a local agent runtime with sessions, persisted message streams, local tool execution, LSP/MCP context, permission gates, hooks, skills, sub-agents, non-interactive runs, and a client/server workspace boundary.
+This section maps the inherited 4RGED architecture so new F4RGE capabilities can be planned without discarding the valuable local agent edge. The current CLI is not just a chat UI around an LLM. It is already a local agent runtime with sessions, persisted message streams, local tool execution, LSP/MCP context, permission gates, hooks, skills, sub-agents, non-interactive runs, and a client/server workspace boundary.
 
 The managed enterprise work should therefore change who controls identity, model access, policy, prompts, traces, and provider routing. It should not replace the whole local runtime unless there is a specific security or product reason.
 
@@ -360,7 +360,7 @@ The important runtime shape is:
 3. `setupWorkspace` chooses either an in-process workspace or a client/server workspace.
 4. The in-process path creates `app.App`, which wires SQLite, config, sessions, messages, history, permissions, file tracking, LSP, MCP, skills, events, and the agent coordinator.
 5. The client/server path uses `workspace.ClientWorkspace`, which exposes the same frontend interface through an HTTP/client protocol.
-6. The Bubble Tea TUI consumes only the `workspace.Workspace` interface rather than directly depending on `app.App`.
+6. The terminal UI consumes only the `workspace.Workspace` interface rather than directly depending on `app.App`.
 
 This is one of the strongest existing seams for enterprise integration. F4RGE can add auth, policy, catalog refresh, gateway routing, and trace upload behind the workspace/app boundary while keeping the TUI mostly intact.
 
@@ -518,7 +518,7 @@ The current model/provider system lives mainly in:
 
 Current behavior:
 
-- Uses Catwalk provider metadata plus embedded provider data.
+- Uses legacy provider metadata plus embedded provider data.
 - Can auto-update provider catalogs.
 - Supports direct provider API keys.
 - Supports OpenAI, Anthropic, Gemini, Azure, Bedrock, Vertex, OpenRouter, Vercel AI Gateway, Copilot, Hyper, and OpenAI-compatible providers.
@@ -534,7 +534,7 @@ Managed enterprise change:
 - Add a F4RGE gateway provider adapter that satisfies the existing Fantasy language model abstraction.
 - Store selected model preference as a F4RGE product model ID or model role, not `provider/model`.
 - Remove or hide API key entry in customer builds.
-- Remove or hide Catwalk provider update flows in customer builds.
+- Remove or hide provider update flows in customer builds.
 - Keep local provider mode only for internal/dev builds if needed.
 
 ### Prompt And Context System
@@ -741,7 +741,7 @@ Managed enterprise implications:
 
 ### UI And Command Surface
 
-The interactive frontend is the Bubble Tea TUI in `internal/ui/`, backed by `workspace.Workspace`.
+The interactive frontend is the terminal UI in `internal/ui/`, backed by `workspace.Workspace`.
 
 Current product surfaces include:
 
@@ -845,7 +845,7 @@ The current CLI already has update concepts and release packaging. The managed p
 - channel support: stable, beta, canary, internal
 - `4rged status` and `4rged doctor` checks for update and policy freshness
 
-The existing provider auto-update path should not be confused with product updates. Customer builds should not need Catwalk provider updates once the F4RGE model catalog is authoritative.
+The existing provider auto-update path should not be confused with product updates. Customer builds should not need legacy provider updates once the F4RGE model catalog is authoritative.
 
 ### Current Capabilities To Preserve
 
@@ -885,7 +885,7 @@ Retire from customer-facing enterprise builds:
 
 Gate behind internal/dev mode if still needed:
 
-- Catwalk provider development
+- legacy provider catalog development
 - custom provider definitions
 - local BYOK provider calls
 - direct provider debugging
@@ -1298,7 +1298,7 @@ Goal: ship a managed enterprise CLI that is supportable, secure, and not confuse
 Core work:
 
 - Hide or remove BYOK/provider setup from customer builds.
-- Hide provider auto-update/Catwalk flows from customer docs and command help.
+- Hide provider auto-update flows from customer docs and command help.
 - Keep provider/BYOK mode only behind internal/dev build flags if still needed.
 - Add signed installer and update artifacts.
 - Add checksum verification.

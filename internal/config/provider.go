@@ -54,7 +54,7 @@ func cachePathFor(name string) string {
 	return filepath.Join(home.Dir(), ".local", "share", appName, name+".json")
 }
 
-// UpdateProviders updates the Catwalk providers list from a specified source.
+// UpdateProviders updates the legacy providers list from a specified source.
 func UpdateProviders(pathOrURL string) error {
 	var providers []catwalk.Provider
 	pathOrURL = cmp.Or(pathOrURL, os.Getenv("CATWALK_URL"), defaultCatwalkURL)
@@ -66,7 +66,7 @@ func UpdateProviders(pathOrURL string) error {
 		var err error
 		providers, err = catwalk.NewWithURL(pathOrURL).GetProviders(context.Background(), "")
 		if err != nil {
-			return fmt.Errorf("failed to fetch providers from Catwalk: %w", err)
+			return fmt.Errorf("failed to fetch providers from legacy provider source: %w", err)
 		}
 	default:
 		content, err := os.ReadFile(pathOrURL)
