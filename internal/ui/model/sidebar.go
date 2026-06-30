@@ -1,8 +1,6 @@
 package model
 
 import (
-	"cmp"
-	"fmt"
 	"image"
 
 	"charm.land/lipgloss/v2"
@@ -33,6 +31,7 @@ func (m *UI) modelInfo(width int) string {
 	reasoningInfo := ""
 	providerName := ""
 	modelName := ""
+	var capabilities []string
 	activePane := m.activeSidebarPane()
 	activeSession := activePane.session
 
@@ -46,6 +45,7 @@ func (m *UI) modelInfo(width int) string {
 				if catalogModel, ok := bundle.ModelByID(model.ModelCfg.Model); ok {
 					modelName = catalogModel.Label
 					providerName = bundle.ProviderLabel(catalogModel.Provider)
+					capabilities = catalogModel.Capabilities
 				}
 			}
 		}
@@ -53,20 +53,6 @@ func (m *UI) modelInfo(width int) string {
 		providerConfig, ok := m.com.Config().Providers.Get(model.ModelCfg.Provider)
 		if ok && providerName == "" {
 			providerName = providerConfig.Name
-
-			// Only check reasoning if model can reason
-			if model.CatwalkCfg.CanReason {
-				if len(model.CatwalkCfg.ReasoningLevels) == 0 {
-					if model.ModelCfg.Think {
-						reasoningInfo = "Thinking On"
-					} else {
-						reasoningInfo = "Thinking Off"
-					}
-				} else {
-					reasoningEffort := cmp.Or(model.ModelCfg.ReasoningEffort, model.CatwalkCfg.DefaultReasoningEffort)
-					reasoningInfo = fmt.Sprintf("Reasoning %s", common.FormatReasoningEffort(reasoningEffort))
-				}
-			}
 		}
 	}
 
@@ -74,9 +60,9 @@ func (m *UI) modelInfo(width int) string {
 	if model != nil && activeSession != nil {
 		modelContext = &common.ModelContextInfo{
 			ContextUsed:    activeSession.CompletionTokens + activeSession.PromptTokens,
-			Cost:           activeSession.Cost,
 			ModelContext:   model.CatwalkCfg.ContextWindow,
 			EstimatedUsage: activeSession.EstimatedUsage,
+			Capabilities:   capabilities,
 		}
 	}
 	if model != nil {

@@ -48,6 +48,9 @@ type Session struct {
 	Kind           string   `json:"kind"`
 	OrganizationID string   `json:"organizationId"`
 	SubjectUserID  string   `json:"subjectUserId,omitempty"`
+	OrganizationName string `json:"organizationName,omitempty"`
+	DisplayName    string   `json:"displayName,omitempty"`
+	Email          string   `json:"email,omitempty"`
 	Scopes         []string `json:"scopes"`
 	Status         string   `json:"status"`
 	ExpiresAt      string   `json:"expiresAt"`
@@ -171,6 +174,9 @@ func Validate(bundle *Bundle, session *f4rgesession.ManagedSession) error {
 func Ready() bool {
 	session, err := f4rgesession.Load()
 	if err != nil || !f4rgesession.IsUsable(session) {
+		return false
+	}
+	if !f4rgesession.HasRuntimeScope(session, "runtime.credentials.issue") {
 		return false
 	}
 	bundle, err := LoadCached()

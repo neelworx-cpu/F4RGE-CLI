@@ -9,7 +9,6 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/home"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/ui/styles"
 	"golang.org/x/text/cases"
@@ -31,59 +30,25 @@ func FormatReasoningEffort(effort string) string {
 	return cases.Title(language.English).String(effort)
 }
 
-// ModelContextInfo contains token usage and cost information for a model.
+// ModelContextInfo contains token usage information for a model.
 type ModelContextInfo struct {
 	ContextUsed    int64
 	ModelContext   int64
-	Cost           float64
 	EstimatedUsage bool
+	Capabilities   []string
 }
 
-// ModelInfo renders model information including name, provider, reasoning
-// settings, and optional context usage/cost.
+// ModelInfo renders model information including name, reasoning settings, and
+// optional context usage.
 func ModelInfo(t *styles.Styles, modelName, providerName, reasoningInfo string, context *ModelContextInfo, width int, hyperCredits *int) string {
 	modelIcon := t.ModelInfo.Icon.Render(styles.ModelIcon)
 	modelName = t.ModelInfo.Name.Render(modelName)
-
-	// Build first line with model name and optionally provider on the same line
-	var firstLine string
-	if providerName != "" {
-		providerInfo := t.ModelInfo.Provider.Render(fmt.Sprintf("via %s", providerName))
-		modelWithProvider := fmt.Sprintf("%s %s %s", modelIcon, modelName, providerInfo)
-
-		// Check if it fits on one line
-		if lipgloss.Width(modelWithProvider) <= width {
-			firstLine = modelWithProvider
-		} else {
-			// If it doesn't fit, put provider on next line
-			firstLine = fmt.Sprintf("%s %s", modelIcon, modelName)
-		}
-	} else {
-		firstLine = fmt.Sprintf("%s %s", modelIcon, modelName)
-	}
-
+	firstLine := fmt.Sprintf("%s %s", modelIcon, modelName)
 	parts := []string{firstLine}
 
-	// If provider didn't fit on first line, add it as second line
-	if providerName != "" && !strings.Contains(firstLine, "via") {
-		providerInfo := fmt.Sprintf("via %s", providerName)
-		parts = append(parts, t.ModelInfo.ProviderFallback.Render(providerInfo))
-	}
-
-	if reasoningInfo != "" {
-		parts = append(parts, t.ModelInfo.Reasoning.Render(reasoningInfo))
-	}
-
 	if context != nil {
-		formattedInfo := formatTokensAndCost(t, context.ContextUsed, context.ModelContext, context.Cost, context.EstimatedUsage)
+		formattedInfo := formatTokens(t, context.ContextUsed, context.ModelContext, context.EstimatedUsage, context.Capabilities)
 		parts = append(parts, lipgloss.NewStyle().PaddingLeft(2).Render(formattedInfo))
-	}
-
-	if providerName == hyper.DisplayName && hyperCredits != nil {
-		hcInfo := t.ModelInfo.HypercreditIcon.Render(styles.HypercreditIcon)
-		hcInfo += " "
-		hcInfo += t.ModelInfo.HypercreditText.Render(fmt.Sprintf("%s Hypercredits", FormatCredits(*hyperCredits)))
-		parts = append(parts, "", hcInfo)
 	}
 
 	return lipgloss.NewStyle().Width(width).Render(
@@ -91,9 +56,9 @@ func ModelInfo(t *styles.Styles, modelName, providerName, reasoningInfo string, 
 	)
 }
 
-// formatTokensAndCost formats token usage and cost with appropriate units
-// (K/M) and percentage of context window.
-func formatTokensAndCost(t *styles.Styles, tokens, contextWindow int64, cost float64, estimated bool) string {
+// formatTokens formats token usage with appropriate units (K/M) and percentage
+// of context window.
+func formatTokens(t *styles.Styles, tokens, contextWindow int64, estimated bool, capabilities []string) string {
 	var formattedTokens string
 	switch {
 	case tokens >= 1_000_000:
@@ -116,8 +81,6 @@ func formatTokensAndCost(t *styles.Styles, tokens, contextWindow int64, cost flo
 		percentage = (float64(tokens) / float64(contextWindow)) * 100
 	}
 
-	formattedCost := t.ModelInfo.Cost.Render(fmt.Sprintf("$%.2f", cost))
-
 	formattedTokens = t.ModelInfo.TokenCount.Render(fmt.Sprintf("(%s)", formattedTokens))
 	percentageText := fmt.Sprintf("%d%%", int(percentage))
 	if estimated {
@@ -128,8 +91,28 @@ func formatTokensAndCost(t *styles.Styles, tokens, contextWindow int64, cost flo
 	if percentage > 80 {
 		formattedTokens = fmt.Sprintf("%s %s", styles.LSPWarningIcon, formattedTokens)
 	}
+	if icons := capabilityIcons(capabilities); icons != "" {
+		formattedTokens = fmt.Sprintf("%s %s", formattedTokens, t.ModelInfo.Reasoning.Render(icons))
+	}
 
-	return fmt.Sprintf("%s %s", formattedTokens, formattedCost)
+	return formattedTokens
+}
+
+func capabilityIcons(capabilities []string) string {
+	var icons []string
+	for _, capability := range capabilities {
+		switch capability {
+		case "reasoning":
+			icons = append(icons, "◇")
+		case "tools":
+			icons = append(icons, "⌘")
+		case "code":
+			icons = append(icons, "{}")
+		case "vision":
+			icons = append(icons, "◉")
+		}
+	}
+	return strings.Join(icons, " ")
 }
 
 // FormatCredits formats an integer with comma separators for thousands.

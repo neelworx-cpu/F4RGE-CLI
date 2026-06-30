@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,22 +21,24 @@ const (
 // ManagedSession is the local F4RGE client session snapshot. It is deliberately
 // separated from provider config so customer auth does not look like BYOK setup.
 type ManagedSession struct {
-	AccessToken         string `json:"access_token,omitempty"`
-	RefreshToken        string `json:"refresh_token,omitempty"`
-	RuntimeSessionID    string `json:"runtime_session_id,omitempty"`
-	SubjectUserID       string `json:"subject_user_id,omitempty"`
-	UserEmail           string `json:"user_email,omitempty"`
-	OrganizationID      string `json:"organization_id,omitempty"`
-	OrganizationName    string `json:"organization_name,omitempty"`
-	PolicyVersion       string `json:"policy_version,omitempty"`
-	ModelCatalogVersion string `json:"model_catalog_version,omitempty"`
-	PromptBundleVersion string `json:"prompt_bundle_version,omitempty"`
-	RuntimeBundleHash   string `json:"runtime_bundle_hash,omitempty"`
-	GatewayEndpoint     string `json:"gateway_endpoint,omitempty"`
-	PlatformEndpoint    string `json:"platform_endpoint,omitempty"`
-	ExpiresAt           int64  `json:"expires_at,omitempty"`
-	CreatedAt           int64  `json:"created_at,omitempty"`
-	UpdatedAt           int64  `json:"updated_at,omitempty"`
+	AccessToken         string   `json:"access_token,omitempty"`
+	RefreshToken        string   `json:"refresh_token,omitempty"`
+	RuntimeSessionID    string   `json:"runtime_session_id,omitempty"`
+	RuntimeScopes       []string `json:"runtime_scopes,omitempty"`
+	SubjectUserID       string   `json:"subject_user_id,omitempty"`
+	UserDisplayName     string   `json:"user_display_name,omitempty"`
+	UserEmail           string   `json:"user_email,omitempty"`
+	OrganizationID      string   `json:"organization_id,omitempty"`
+	OrganizationName    string   `json:"organization_name,omitempty"`
+	PolicyVersion       string   `json:"policy_version,omitempty"`
+	ModelCatalogVersion string   `json:"model_catalog_version,omitempty"`
+	PromptBundleVersion string   `json:"prompt_bundle_version,omitempty"`
+	RuntimeBundleHash   string   `json:"runtime_bundle_hash,omitempty"`
+	GatewayEndpoint     string   `json:"gateway_endpoint,omitempty"`
+	PlatformEndpoint    string   `json:"platform_endpoint,omitempty"`
+	ExpiresAt           int64    `json:"expires_at,omitempty"`
+	CreatedAt           int64    `json:"created_at,omitempty"`
+	UpdatedAt           int64    `json:"updated_at,omitempty"`
 }
 
 // DeviceAuth describes the customer-facing device/browser sign-in step.
@@ -117,6 +120,10 @@ func IsRuntimeSessionUsable(session *ManagedSession) bool {
 		session.OrganizationID != "" &&
 		session.OrganizationID != "pending" &&
 		!IsExpired(session)
+}
+
+func HasRuntimeScope(session *ManagedSession, scope string) bool {
+	return session != nil && slices.Contains(session.RuntimeScopes, scope)
 }
 
 func MissingReadinessFields(session *ManagedSession) []string {

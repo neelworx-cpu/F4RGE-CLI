@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
+	"charm.land/fantasy/providers/google"
 	"github.com/google/uuid"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/controlplane"
 	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
@@ -33,17 +34,18 @@ type languageModel struct {
 }
 
 type gatewayEvent struct {
-	Type          string `json:"type"`
-	Delta         string `json:"delta"`
-	ToolCallID    string `json:"toolCallId"`
-	Name          string `json:"name"`
-	ArgumentsJSON string `json:"argumentsJson"`
-	Code          string `json:"code"`
-	Message       string `json:"message"`
-	Retryable     bool   `json:"retryable"`
-	InputTokens   int64  `json:"inputTokens"`
-	OutputTokens  int64  `json:"outputTokens"`
-	FinishReason  string `json:"finishReason"`
+	Type             string          `json:"type"`
+	Delta            string          `json:"delta"`
+	ToolCallID       string          `json:"toolCallId"`
+	Name             string          `json:"name"`
+	ArgumentsJSON    string          `json:"argumentsJson"`
+	ProviderMetadata json.RawMessage `json:"providerMetadata"`
+	Code             string          `json:"code"`
+	Message          string          `json:"message"`
+	Retryable        bool            `json:"retryable"`
+	InputTokens      int64           `json:"inputTokens"`
+	OutputTokens     int64           `json:"outputTokens"`
+	FinishReason     string          `json:"finishReason"`
 }
 
 func (m languageModel) Provider() string {
@@ -85,7 +87,7 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 		return nil, err
 	}
 	if !f4rgesession.IsUsable(session) {
-		return nil, fmt.Errorf("F4RGE managed runtime session required; run `4rged login`")
+		return nil, fmt.Errorf("F4RGE sign-in is required. Open 4RGED and use the F4RGE sign-in dialog")
 	}
 	request := controlplane.InferenceRequest{
 		RequestID:      uuid.NewString(),
@@ -105,6 +107,7 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 	return func(yield func(fantasy.StreamPart) bool) {
 		defer body.Close()
 		emittedContent := false
+		sawToolResult := len(promptToGatewayToolResults(call.Prompt)) > 0
 		var usage fantasy.Usage
 		scanner := bufio.NewScanner(body)
 		for scanner.Scan() {
@@ -138,6 +141,14 @@ func (m languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.S
 			return
 		}
 		if !emittedContent {
+			if sawToolResult {
+				yield(fantasy.StreamPart{
+					Type:         fantasy.StreamPartTypeFinish,
+					FinishReason: fantasy.FinishReasonStop,
+					Usage:        usage,
+				})
+				return
+			}
 			yield(fantasy.StreamPart{
 				Type:  fantasy.StreamPartTypeError,
 				Error: fmt.Errorf("F4RGE Gateway completed without text or tool calls"),
@@ -185,17 +196,27 @@ func promptToGatewayMessages(prompt fantasy.Prompt) []controlplane.InferenceMess
 	messages := make([]controlplane.InferenceMessage, 0, len(prompt))
 	for _, msg := range prompt {
 		var text strings.Builder
+		var toolCalls []controlplane.InferenceToolCall
 		for _, part := range msg.Content {
 			if content, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok {
 				text.WriteString(content.Text)
 			}
+			if call, ok := fantasy.AsMessagePart[fantasy.ToolCallPart](part); ok {
+				toolCalls = append(toolCalls, controlplane.InferenceToolCall{
+					ToolCallID:       call.ToolCallID,
+					Name:             call.ToolName,
+					ArgumentsJSON:    call.Input,
+					ProviderMetadata: gatewayProviderMetadataJSON(call.ProviderOptions),
+				})
+			}
 		}
-		if text.Len() == 0 {
+		if text.Len() == 0 && len(toolCalls) == 0 {
 			continue
 		}
 		messages = append(messages, controlplane.InferenceMessage{
-			Role:    string(msg.Role),
-			Content: text.String(),
+			Role:      string(msg.Role),
+			Content:   text.String(),
+			ToolCalls: toolCalls,
 		})
 	}
 	return messages
@@ -211,11 +232,24 @@ func promptToGatewayToolResults(prompt fantasy.Prompt) []controlplane.InferenceT
 			}
 			results = append(results, controlplane.InferenceToolResult{
 				ToolCallID: result.ToolCallID,
+				Name:       toolNameForResult(prompt, result.ToolCallID),
 				Content:    toolResultText(result.Output),
 			})
 		}
 	}
 	return results
+}
+
+func toolNameForResult(prompt fantasy.Prompt, toolCallID string) string {
+	for _, msg := range prompt {
+		for _, part := range msg.Content {
+			call, ok := fantasy.AsMessagePart[fantasy.ToolCallPart](part)
+			if ok && call.ToolCallID == toolCallID {
+				return call.ToolName
+			}
+		}
+	}
+	return ""
 }
 
 func toolResultText(result fantasy.ToolResultOutputContent) string {
@@ -242,6 +276,68 @@ func toolResultText(result fantasy.ToolResultOutputContent) string {
 	return ""
 }
 
+func gatewayProviderMetadataJSON(metadata fantasy.ProviderOptions) json.RawMessage {
+	if len(metadata) == 0 {
+		return nil
+	}
+	if googleData, ok := metadata[google.Name]; ok {
+		data, err := json.Marshal(googleData)
+		if err == nil {
+			var meta google.ReasoningMetadata
+			if err := json.Unmarshal(data, &meta); err == nil && meta.Signature != "" {
+				normalized, err := json.Marshal(map[string]any{
+					google.Name: map[string]any{
+						"signature":        meta.Signature,
+						"thoughtSignature": meta.Signature,
+					},
+				})
+				if err == nil {
+					return normalized
+				}
+			}
+		}
+	}
+	data, err := json.Marshal(metadata)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
+func gatewayProviderMetadata(data json.RawMessage) fantasy.ProviderMetadata {
+	if len(data) == 0 {
+		return nil
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	result := fantasy.ProviderMetadata{}
+	if googleData, ok := raw[google.Name]; ok {
+		var payload struct {
+			Signature        string `json:"signature"`
+			ThoughtSignature string `json:"thoughtSignature"`
+			ToolID           string `json:"tool_id"`
+		}
+		if err := json.Unmarshal(googleData, &payload); err == nil {
+			signature := payload.Signature
+			if signature == "" {
+				signature = payload.ThoughtSignature
+			}
+			if signature != "" || payload.ToolID != "" {
+				result[google.Name] = &google.ReasoningMetadata{
+					Signature: signature,
+					ToolID:    payload.ToolID,
+				}
+			}
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamPart, bool) {
 	switch event.Type {
 	case "text.delta":
@@ -256,10 +352,11 @@ func eventToStreamPart(event gatewayEvent, usage fantasy.Usage) (fantasy.StreamP
 		}, true
 	case "tool.call":
 		return fantasy.StreamPart{
-			Type:          fantasy.StreamPartTypeToolCall,
-			ID:            event.ToolCallID,
-			ToolCallName:  event.Name,
-			ToolCallInput: event.ArgumentsJSON,
+			Type:             fantasy.StreamPartTypeToolCall,
+			ID:               event.ToolCallID,
+			ToolCallName:     event.Name,
+			ToolCallInput:    event.ArgumentsJSON,
+			ProviderMetadata: gatewayProviderMetadata(event.ProviderMetadata),
 		}, true
 	case "run.completed":
 		return fantasy.StreamPart{

@@ -50,26 +50,107 @@ type Defaults struct {
 }
 
 type Model struct {
-	ID              string         `json:"id"`
-	Provider        string         `json:"provider"`
-	ProviderModelID string         `json:"providerModelId"`
-	Label           string         `json:"label"`
-	Description     string         `json:"description"`
-	Status          string         `json:"status"`
-	Capabilities    []string       `json:"capabilities"`
-	RuntimeRoles    []string       `json:"runtimeRoles"`
-	ContextWindow   int            `json:"contextWindow"`
-	MaxOutputTokens int            `json:"maxOutputTokens"`
-	RequestProfile  RequestProfile `json:"requestProfile"`
-	CostClass       string         `json:"costClass"`
-	RiskClass       string         `json:"riskClass"`
+	ID                   string           `json:"id"`
+	Provider             string           `json:"provider"`
+	ProviderModelID      string           `json:"providerModelId"`
+	Label                string           `json:"label"`
+	Description          string           `json:"description"`
+	Status               string           `json:"status"`
+	Capabilities         []string         `json:"capabilities"`
+	RuntimeRoles         []string         `json:"runtimeRoles"`
+	ContextWindow        int              `json:"contextWindow"`
+	DefaultContextWindow int              `json:"defaultContextWindow,omitempty"`
+	MaxOutputTokens      int              `json:"maxOutputTokens"`
+	RequestProfile       RequestProfile   `json:"requestProfile"`
+	ParameterOptions     ParameterOptions `json:"parameterOptions"`
+	CostClass            string           `json:"costClass"`
+	RiskClass            string           `json:"riskClass"`
 }
 
 type RequestProfile struct {
-	APIFamily       string   `json:"apiFamily"`
-	ProviderModelID string   `json:"providerModelId"`
-	DeploymentName  string   `json:"deploymentName,omitempty"`
-	AcceptedParams  []string `json:"acceptedParameters"`
+	APIFamily         string         `json:"apiFamily"`
+	ProviderModelID   string         `json:"providerModelId"`
+	DeploymentName    string         `json:"deploymentName,omitempty"`
+	AcceptedParams    []string       `json:"acceptedParameters"`
+	DefaultParameters map[string]any `json:"defaultParameters,omitempty"`
+}
+
+// ParameterOptions is the catalog-delivered adjustable parameter surface. The
+// CLI never lets users adjust these; it consumes the default-flagged option of
+// each group. Mirrors F4rgeModelParameterOptions in F4RGE-Web platform-contracts.
+type ParameterOptions struct {
+	ContextWindows   []ContextWindowOption  `json:"contextWindows,omitempty"`
+	ReasoningEfforts []ReasoningEffortOption `json:"reasoningEfforts,omitempty"`
+	Toggles          []ToggleOption          `json:"toggles,omitempty"`
+}
+
+type ContextWindowOption struct {
+	Value   int    `json:"value"`
+	Label   string `json:"label"`
+	Default bool   `json:"default,omitempty"`
+}
+
+type ReasoningEffortOption struct {
+	Value   string `json:"value"`
+	Label   string `json:"label"`
+	Default bool   `json:"default,omitempty"`
+}
+
+type ToggleOption struct {
+	ID      string `json:"id"`
+	Label   string `json:"label"`
+	Value   bool   `json:"value"`
+	Default bool   `json:"default,omitempty"`
+}
+
+// ResolvedDefaults is the effective default parameter selection for a model,
+// derived purely from the catalog ParameterOptions.
+type ResolvedDefaults struct {
+	ReasoningEffort string
+	ContextWindow   int
+	Toggles         map[string]bool
+}
+
+// ResolveDefaults mirrors resolveModelParameterDefaults in platform-contracts:
+// it returns the default-flagged option per group (falling back to the first),
+// so CLI/Cloud apply identical defaults to what the catalog/console define.
+func (m Model) ResolveDefaults() ResolvedDefaults {
+	resolved := ResolvedDefaults{Toggles: map[string]bool{}}
+
+	if len(m.ParameterOptions.ReasoningEfforts) > 0 {
+		chosen := m.ParameterOptions.ReasoningEfforts[0]
+		for _, option := range m.ParameterOptions.ReasoningEfforts {
+			if option.Default {
+				chosen = option
+				break
+			}
+		}
+		resolved.ReasoningEffort = chosen.Value
+	}
+
+	if len(m.ParameterOptions.ContextWindows) > 0 {
+		chosen := m.ParameterOptions.ContextWindows[0]
+		for _, option := range m.ParameterOptions.ContextWindows {
+			if option.Default {
+				chosen = option
+				break
+			}
+		}
+		resolved.ContextWindow = chosen.Value
+	} else if m.DefaultContextWindow > 0 {
+		resolved.ContextWindow = m.DefaultContextWindow
+	}
+
+	for _, toggle := range m.ParameterOptions.Toggles {
+		resolved.Toggles[toggle.ID] = toggle.Default || toggle.Value
+	}
+
+	return resolved
+}
+
+// ThinkingEnabledByDefault reports whether the catalog defaults turn thinking on.
+func (m Model) ThinkingEnabledByDefault() bool {
+	return m.ResolveDefaults().Toggles["thinking"]
 }
 
 func Path() string {

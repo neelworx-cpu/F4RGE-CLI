@@ -21,19 +21,41 @@ var taskPromptTmpl []byte
 var initializePromptTmpl []byte
 
 func coderPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
+	// The cloud catalog is the source of truth for the coder prompt: when a
+	// managed bundle renders a non-empty agent stack it REPLACES the embedded
+	// template (the seeded catalog content carries the same Go template
+	// placeholders). The embedded template remains the offline fallback.
 	template := string(coderPromptTmpl)
-	if session, err := f4rgesession.Load(); err == nil {
-		if bundle, fetchErr := promptbundle.Fetch(session); fetchErr == nil && bundle != nil {
-			if managed := strings.TrimSpace(bundle.RenderMode("agent")); managed != "" {
-				template = managed + "\n\n" + template
-			}
-		}
+	if managed := managedCoderTemplate(); managed != "" {
+		template = managed
 	}
 	systemPrompt, err := prompt.NewPrompt("coder", template, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return systemPrompt, nil
+}
+
+// managedCoderTemplate resolves the managed prompt template for the agent
+// mode: live fetch first, last-good cached bundle when the control plane is
+// unreachable, empty string when neither is available or valid.
+func managedCoderTemplate() string {
+	session, err := f4rgesession.Load()
+	if err != nil {
+		return ""
+	}
+	bundle, fetchErr := promptbundle.Fetch(session)
+	if fetchErr != nil || bundle == nil {
+		cached, cacheErr := promptbundle.LoadCached()
+		if cacheErr != nil || cached == nil {
+			return ""
+		}
+		bundle = cached
+	}
+	if err := promptbundle.Validate(bundle, session); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(bundle.RenderMode("agent"))
 }
 
 func taskPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {

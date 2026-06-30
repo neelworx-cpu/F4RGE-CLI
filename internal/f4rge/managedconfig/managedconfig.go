@@ -22,7 +22,10 @@ func Apply(store *config.ConfigStore) bool {
 	runtime, _ := runtimebundle.Fetch(session)
 	bundle, err := modelcatalog.Fetch(session)
 	if err != nil || bundle == nil || len(bundle.Models) == 0 {
-		return false
+		bundle, err = modelcatalog.LoadCached()
+		if err != nil || bundle == nil || len(bundle.Models) == 0 {
+			return false
+		}
 	}
 	models := make([]catwalk.Model, 0, len(bundle.Models)+1)
 	models = append(models, catwalk.Model{
@@ -38,7 +41,7 @@ func Apply(store *config.ConfigStore) bool {
 			ID:                     model.ID,
 			Name:                   model.Label,
 			ContextWindow:          int64(model.ContextWindow),
-			CanReason:              true,
+			CanReason:              canReason(model),
 			DefaultMaxTokens:       defaultMaxTokens(model),
 			DefaultReasoningEffort: defaultReasoningEffort(model),
 		})
@@ -168,6 +171,19 @@ func defaultMaxTokens(model modelcatalog.Model) int64 {
 }
 
 func defaultReasoningEffort(model modelcatalog.Model) string {
+	// The catalog is the source of truth: honour the default-flagged reasoning
+	// effort, mapped to a provider-safe value. Only fall back to the legacy
+	// role heuristic when the catalog defines no reasoning options for a model.
+	if resolved := model.ResolveDefaults().ReasoningEffort; resolved != "" {
+		return providerReasoningEffort(resolved)
+	}
+	if len(model.ParameterOptions.ReasoningEfforts) > 0 {
+		// Catalog explicitly defines reasoning options with a "none" default.
+		return ""
+	}
+	if !supportsAdaptiveReasoning(model) {
+		return ""
+	}
 	for _, role := range model.RuntimeRoles {
 		if role == "title" || role == "summarize" || role == "subAgent" {
 			return "low"
@@ -176,12 +192,49 @@ func defaultReasoningEffort(model modelcatalog.Model) string {
 	return "medium"
 }
 
+// providerReasoningEffort maps catalog reasoning-effort enum values
+// (none/low/medium/high/extra_high/max) to the low/medium/high vocabulary the
+// CLI provider adapters accept.
+func providerReasoningEffort(value string) string {
+	switch value {
+	case "none":
+		return ""
+	case "low":
+		return "low"
+	case "medium":
+		return "medium"
+	case "high", "extra_high", "max":
+		return "high"
+	default:
+		return value
+	}
+}
+
+func canReason(model modelcatalog.Model) bool {
+	for _, capability := range model.Capabilities {
+		if capability == "reasoning" {
+			return true
+		}
+	}
+	return false
+}
+
+func supportsAdaptiveReasoning(model modelcatalog.Model) bool {
+	for _, parameter := range model.RequestProfile.AcceptedParams {
+		if parameter == "reasoningEffort" {
+			return true
+		}
+	}
+	return false
+}
+
 func selectedModel(modelID string, models []catwalk.Model) config.SelectedModel {
 	selected := config.SelectedModel{Provider: ProviderID, Model: modelID}
 	for _, model := range models {
 		if model.ID == modelID {
 			selected.MaxTokens = model.DefaultMaxTokens
 			selected.ReasoningEffort = model.DefaultReasoningEffort
+			selected.Think = true
 			return selected
 		}
 	}

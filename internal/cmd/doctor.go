@@ -6,6 +6,7 @@ import (
 
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
 	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp/bootstrap"
 	"github.com/spf13/cobra"
 )
 
@@ -43,11 +44,29 @@ var doctorCmd = &cobra.Command{
 		if bundle, err := runtimebundle.LoadCached(); err == nil && f4rgesession.IsUsable(session) && runtimebundle.Validate(bundle, session) == nil {
 			fmt.Println("  policy:    ok")
 			fmt.Printf("  models:    ok (%d available)\n", len(bundle.Models))
-			fmt.Println("  gateway:   ok")
+			fmt.Println("  leases:    ready")
 		} else {
 			fmt.Println("  policy:    unavailable")
 			fmt.Println("  models:    unavailable")
-			fmt.Println("  gateway:   unavailable")
+			fmt.Println("  leases:    unavailable")
+		}
+		fmt.Println()
+		fmt.Println("Language servers")
+		lspStatuses := bootstrap.Statuses()
+		if len(lspStatuses) == 0 {
+			fmt.Println("  managed:  ready (will install common language servers when needed)")
+		} else {
+			for _, status := range lspStatuses {
+				label := status.Name
+				if label == "" {
+					label = status.Command
+				}
+				fmt.Printf("  %-9s %s", label+":", status.Kind)
+				if status.Message != "" {
+					fmt.Print(" (" + status.Message + ")")
+				}
+				fmt.Println()
+			}
 		}
 		fmt.Println()
 		fmt.Println("Install/update")

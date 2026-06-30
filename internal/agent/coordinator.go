@@ -18,14 +18,17 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
-	gatewayprovider "github.com/neelworx-cpu/F4RGE-CLI/internal/agent/gateway"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/gateway"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/hyper"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/notify"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/prompt"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/agent/tools"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/event"
+	f4rgecredentials "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/credentials"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/managedconfig"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
 	f4rgesession "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/session"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/filetracker"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/history"
@@ -370,7 +373,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		extraBody := make(map[string]any)
 
 		_, hasReasoningEffort := mergedOptions["reasoning_effort"]
-		if !hasReasoningEffort && model.ModelCfg.ReasoningEffort != "" && model.CatwalkCfg.CanReason {
+		if !hasReasoningEffort && model.ModelCfg.ReasoningEffort != "" && model.CatwalkCfg.CanReason && !isF4rgeManagedCompatProvider(providerCfg.ID) {
 			switch providerCfg.ID {
 			case string(catwalk.InferenceProviderIoNet):
 				extraBody["reasoning"] = map[string]string{"effort": model.ModelCfg.ReasoningEffort}
@@ -409,6 +412,8 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 				extraBody["enable_thinking"] = model.ModelCfg.Think
 			}
 		}
+		// Azure managed chat-completions routes reject enable_thinking/thinking
+		// request args. Match Desktop buildF4rgeChatCompletionsExtraBody().
 
 		mergedOptions["extra_body"] = extraBody
 
@@ -587,16 +592,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config
 func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Model, Model, error) {
 	if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
-		managedSession, err := f4rgesession.Load()
-		if err != nil {
-			return Model{}, Model{}, err
-		}
-		if !f4rgesession.IsUsable(managedSession) {
-			return Model{}, Model{}, fmt.Errorf("F4RGE managed runtime session required; run `4rged login`")
-		}
-		if !managedconfig.EnsureSelectedModels(c.cfg.Config()) {
-			managedconfig.Apply(c.cfg)
-		}
+		return c.buildManagedAgentModels(ctx, isSubAgent)
 	}
 	largeModelCfg, ok := c.cfg.Config().Models[config.SelectedModelTypeLarge]
 	if !ok {
@@ -680,6 +676,219 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Mo
 			ModelCfg:   smallModelCfg,
 			FlatRate:   smallProviderCfg.FlatRate,
 		}, nil
+}
+
+func (c *coordinator) buildManagedAgentModels(ctx context.Context, isSubAgent bool) (Model, Model, error) {
+	managedSession, err := f4rgesession.Load()
+	if err != nil {
+		return Model{}, Model{}, err
+	}
+	if !f4rgesession.IsRuntimeSessionUsable(managedSession) {
+		return Model{}, Model{}, fmt.Errorf("F4RGE sign-in is required. Open 4RGED and use the F4RGE sign-in dialog")
+	}
+	runtime, _ := runtimebundle.Fetch(managedSession)
+	bundle, err := modelcatalog.Fetch(managedSession)
+	if err != nil {
+		if cached, cacheErr := modelcatalog.LoadCached(); runtimebundle.AllowDevFallback() && cacheErr == nil && cached != nil {
+			bundle = cached
+		} else {
+			return Model{}, Model{}, fmt.Errorf("fresh F4RGE model catalog required for runtime execution: %w", err)
+		}
+	}
+	if bundle == nil || len(bundle.Models) == 0 {
+		return Model{}, Model{}, fmt.Errorf("F4RGE model catalog is empty")
+	}
+	if !managedconfig.EnsureSelectedModels(c.cfg.Config()) {
+		managedconfig.Apply(c.cfg)
+	}
+	largeModelCfg := c.cfg.Config().Models[config.SelectedModelTypeLarge]
+	smallModelCfg := c.cfg.Config().Models[config.SelectedModelTypeSmall]
+	largeModel, err := c.buildManagedModel(ctx, managedSession, bundle, runtime, largeModelCfg, "agent", isSubAgent)
+	if err != nil {
+		return Model{}, Model{}, err
+	}
+	smallModel, err := c.buildManagedModel(ctx, managedSession, bundle, runtime, smallModelCfg, "subAgent", true)
+	if err != nil {
+		return Model{}, Model{}, err
+	}
+	return largeModel, smallModel, nil
+}
+
+func (c *coordinator) buildManagedModel(ctx context.Context, session *f4rgesession.ManagedSession, bundle *modelcatalog.Bundle, runtime *runtimebundle.Bundle, selected config.SelectedModel, promptMode string, isSubAgent bool) (Model, error) {
+	requestedModelID := selected.Model
+	if requestedModelID == "" || requestedModelID == managedconfig.AutoModelID {
+		requestedModelID = managedFallbackModel(bundle, runtime, promptMode)
+	}
+	selected = normalizeManagedSelection(selected, bundle, requestedModelID)
+	// Default managed path: route model calls through the F4RGE Gateway proxy so
+	// no provider key ever reaches the client. The legacy credential-lease path
+	// stays available behind F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH for rollback.
+	if managedGatewayEnabled() {
+		return c.buildManagedGatewayModel(ctx, bundle, requestedModelID, selected)
+	}
+	lease, err := f4rgecredentials.Issue(session, f4rgecredentials.IssueRequest{
+		ModelID:       requestedModelID,
+		PromptMode:    managedPromptMode(promptMode),
+		Catalog:       bundle,
+		RuntimePolicy: managedPolicyVersion(runtime),
+	})
+	if err != nil {
+		return Model{}, err
+	}
+	if err := validateLeaseCatalog(lease, bundle); err != nil {
+		return Model{}, err
+	}
+	managedModel := lease.ResolvedModel
+	if managedModel.ID == "" {
+		var ok bool
+		managedModel, ok = bundle.ModelByID(lease.ResolvedModelID)
+		if !ok {
+			return Model{}, fmt.Errorf("F4RGE leased model %q not found in catalog", lease.ResolvedModelID)
+		}
+	}
+	providerCfg := providerConfigFromLease(lease, managedModel)
+	modelCfg := selected
+	modelCfg.Provider = providerCfg.ID
+	modelCfg.Model = lease.ProviderModelID
+	if lease.DeploymentName != "" && (lease.APIFamily == "azure.responses" || lease.APIFamily == "azure.completions") {
+		modelCfg.Model = lease.DeploymentName
+	}
+	providerCfg.Models[0].ID = modelCfg.Model
+	if lease.APIFamily == "azure.responses" {
+		providerCfg.Type = openaicompat.Name
+		providerCfg.BaseURL = strings.TrimRight(lease.Route.BaseURL, "/") + "/openai/v1"
+		if providerCfg.ExtraHeaders == nil {
+			providerCfg.ExtraHeaders = map[string]string{}
+		}
+		providerCfg.ExtraHeaders["api-key"] = lease.Secret.Value
+		if providerCfg.ExtraParams == nil {
+			providerCfg.ExtraParams = map[string]string{}
+		}
+		providerCfg.ExtraBody = map[string]any{"forceResponses": true}
+		if lease.Route.APIVersion != "" {
+			providerCfg.ExtraHeaders["x-f4rge-azure-api-version"] = lease.Route.APIVersion
+		}
+	}
+	if lease.APIFamily == "azure.completions" && isF4rgeProviderModel(managedModel) {
+		providerCfg.Type = openaicompat.Name
+		providerCfg.BaseURL = strings.TrimRight(lease.Route.BaseURL, "/") + "/openai/v1"
+		if providerCfg.ExtraHeaders == nil {
+			providerCfg.ExtraHeaders = map[string]string{}
+		}
+		providerCfg.ExtraHeaders["api-key"] = lease.Secret.Value
+		if lease.Route.APIVersion != "" {
+			providerCfg.ExtraHeaders["x-f4rge-azure-api-version"] = lease.Route.APIVersion
+		}
+	}
+	c.registerManagedRuntimeProvider(providerCfg)
+	catwalkModel := catwalk.Model{
+		ID:                     modelCfg.Model,
+		Name:                   managedModel.Label,
+		ContextWindow:          int64(managedModel.ContextWindow),
+		CanReason:              managedCanReason(managedModel),
+		DefaultMaxTokens:       managedDefaultMaxTokens(managedModel),
+		DefaultReasoningEffort: managedDefaultReasoningEffort(managedModel, selected),
+	}
+	provider, err := c.buildProvider(providerCfg, modelCfg, isSubAgent)
+	if err != nil {
+		return Model{}, err
+	}
+	languageModel, err := provider.LanguageModel(ctx, modelCfg.Model)
+	if err != nil {
+		return Model{}, err
+	}
+	return Model{
+		Model:      languageModel,
+		CatwalkCfg: catwalkModel,
+		ModelCfg:   modelCfg,
+		FlatRate:   false,
+	}, nil
+}
+
+// managedGatewayEnabled reports whether the managed runtime should route model
+// calls through the F4RGE Gateway proxy (the default). Set
+// F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH to a truthy value to fall back to the
+// legacy credential-lease provider path during rollback.
+func managedGatewayEnabled() bool {
+	switch strings.TrimSpace(strings.ToLower(os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH"))) {
+	case "1", "true", "yes", "on":
+		return false
+	default:
+		return true
+	}
+}
+
+// buildManagedGatewayModel constructs a model backed by the F4RGE Gateway proxy
+// (platform-api inference stream). No provider key is fetched or held locally.
+func (c *coordinator) buildManagedGatewayModel(ctx context.Context, bundle *modelcatalog.Bundle, requestedModelID string, selected config.SelectedModel) (Model, error) {
+	managedModel, ok := bundle.ModelByID(requestedModelID)
+	if !ok {
+		return Model{}, fmt.Errorf("F4RGE model %q not found in catalog", requestedModelID)
+	}
+	provider := gateway.NewProvider()
+	languageModel, err := provider.LanguageModel(ctx, requestedModelID)
+	if err != nil {
+		return Model{}, err
+	}
+	modelCfg := selected
+	modelCfg.Provider = provider.Name()
+	modelCfg.Model = requestedModelID
+	catwalkModel := catwalk.Model{
+		ID:                     requestedModelID,
+		Name:                   managedModel.Label,
+		ContextWindow:          int64(managedModel.ContextWindow),
+		CanReason:              managedCanReason(managedModel),
+		DefaultMaxTokens:       managedDefaultMaxTokens(managedModel),
+		DefaultReasoningEffort: managedDefaultReasoningEffort(managedModel, selected),
+	}
+	return Model{
+		Model:      languageModel,
+		CatwalkCfg: catwalkModel,
+		ModelCfg:   modelCfg,
+		FlatRate:   false,
+	}, nil
+}
+
+func (c *coordinator) registerManagedRuntimeProvider(providerCfg config.ProviderConfig) {
+	publicCfg := providerCfg
+	publicCfg.APIKey = ""
+	publicCfg.APIKeyTemplate = ""
+	publicCfg.OAuthToken = nil
+	c.cfg.Config().Providers.Set(publicCfg.ID, publicCfg)
+}
+
+func normalizeManagedSelection(selected config.SelectedModel, bundle *modelcatalog.Bundle, modelID string) config.SelectedModel {
+	if bundle == nil {
+		return selected
+	}
+	model, ok := bundle.ModelByID(modelID)
+	if !ok {
+		return selected
+	}
+	if managedSupportsAdaptiveReasoning(model) {
+		if selected.ReasoningEffort == "" {
+			selected.ReasoningEffort = managedDefaultReasoningEffort(model, config.SelectedModel{})
+		}
+	} else {
+		selected.ReasoningEffort = ""
+	}
+	if managedSupportsThinking(model) {
+		selected.Think = true
+	}
+	return selected
+}
+
+func validateLeaseCatalog(lease *f4rgecredentials.Lease, bundle *modelcatalog.Bundle) error {
+	if lease == nil || bundle == nil {
+		return fmt.Errorf("F4RGE runtime lease/catalog validation failed")
+	}
+	if lease.CatalogVersion != "" && bundle.CatalogVersion != "" && lease.CatalogVersion != bundle.CatalogVersion {
+		return fmt.Errorf("F4RGE model catalog changed during lease issue; refresh required")
+	}
+	if lease.CatalogHash != "" && bundle.CanonicalHash != "" && lease.CatalogHash != bundle.CanonicalHash {
+		return fmt.Errorf("F4RGE model catalog hash changed during lease issue; refresh required")
+	}
+	return nil
 }
 
 func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string, providerID string) (fantasy.Provider, error) {
@@ -784,6 +993,20 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
 	}
 
+	if strings.HasPrefix(providerID, "f4rge-") {
+		if apiVersion := headers["x-f4rge-azure-api-version"]; apiVersion != "" {
+			delete(headers, "x-f4rge-azure-api-version")
+			opts = append(opts, openaicompat.WithSDKOptions(openaisdk.WithQuery("api-version", apiVersion)))
+		}
+		if extraBody != nil && extraBody["forceResponses"] == true {
+			delete(extraBody, "forceResponses")
+			opts = append(opts,
+				openaicompat.WithUseResponsesAPI(),
+				openaicompat.WithResponsesAPIFunc(func(string) bool { return true }),
+			)
+		}
+	}
+
 	if len(headers) > 0 {
 		opts = append(opts, openaicompat.WithHeaders(headers))
 	}
@@ -880,9 +1103,6 @@ func (c *coordinator) isAnthropicThinking(model config.SelectedModel) bool {
 }
 
 func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model config.SelectedModel, isSubAgent bool) (fantasy.Provider, error) {
-	if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") != "1" {
-		return gatewayprovider.NewProvider(), nil
-	}
 	headers := maps.Clone(providerCfg.ExtraHeaders)
 	if headers == nil {
 		headers = make(map[string]string)
@@ -897,8 +1117,11 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 		}
 	}
 
-	apiKey, _ := c.cfg.Resolve(providerCfg.APIKey)
-	baseURL, _ := c.cfg.Resolve(providerCfg.BaseURL)
+	apiKey, baseURL := providerCfg.APIKey, providerCfg.BaseURL
+	if !strings.HasPrefix(providerCfg.ID, "f4rge-") {
+		apiKey, _ = c.cfg.Resolve(providerCfg.APIKey)
+		baseURL, _ = c.cfg.Resolve(providerCfg.BaseURL)
+	}
 
 	switch providerCfg.Type {
 	case openai.Name:
@@ -931,6 +1154,201 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 		return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody, providerCfg.ID, isSubAgent)
 	default:
 		return nil, fmt.Errorf("provider type not supported: %q", providerCfg.Type)
+	}
+}
+
+func providerConfigFromLease(lease *f4rgecredentials.Lease, model modelcatalog.Model) config.ProviderConfig {
+	headers := maps.Clone(lease.Route.Headers)
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	cfg := config.ProviderConfig{
+		ID:           "f4rge-" + lease.Provider,
+		Name:         "F4RGE " + lease.Provider,
+		BaseURL:      lease.Route.BaseURL,
+		APIKey:       lease.Secret.Value,
+		ExtraHeaders: headers,
+		ExtraParams:  maps.Clone(lease.Route.ExtraParams),
+		Models: []catwalk.Model{{
+			ID:                     providerModelIDFromLease(lease),
+			Name:                   model.Label,
+			ContextWindow:          int64(model.ContextWindow),
+			CanReason:              managedCanReason(model),
+			DefaultMaxTokens:       managedDefaultMaxTokens(model),
+			DefaultReasoningEffort: managedDefaultReasoningEffort(model, config.SelectedModel{}),
+		}},
+	}
+	switch lease.APIFamily {
+	case "openai.responses":
+		cfg.Type = openai.Name
+	case "anthropic.messages":
+		cfg.Type = anthropic.Name
+	case "google.interactions":
+		cfg.Type = google.Name
+	case "azure.responses", "azure.completions":
+		cfg.Type = azure.Name
+		if cfg.ExtraParams == nil {
+			cfg.ExtraParams = map[string]string{}
+		}
+		if lease.Route.APIVersion != "" {
+			cfg.ExtraParams["apiVersion"] = lease.Route.APIVersion
+		}
+		if lease.APIFamily != "" {
+			cfg.ExtraParams["apiFamily"] = lease.APIFamily
+		}
+	default:
+		cfg.Type = openaicompat.Name
+	}
+	return cfg
+}
+
+func providerModelIDFromLease(lease *f4rgecredentials.Lease) string {
+	if lease.DeploymentName != "" && (lease.APIFamily == "azure.responses" || lease.APIFamily == "azure.completions") {
+		return lease.DeploymentName
+	}
+	return lease.ProviderModelID
+}
+
+func managedFallbackModel(bundle *modelcatalog.Bundle, runtime *runtimebundle.Bundle, role string) string {
+	if runtime != nil {
+		switch role {
+		case "agent":
+			if runtime.Defaults.Agent != "" {
+				return runtime.Defaults.Agent
+			}
+			if runtime.Defaults.ModelID != "" {
+				return runtime.Defaults.ModelID
+			}
+		case "subAgent":
+			if runtime.Defaults.SubAgent != "" {
+				return runtime.Defaults.SubAgent
+			}
+			if runtime.Defaults.Ask != "" {
+				return runtime.Defaults.Ask
+			}
+		}
+	}
+	if bundle != nil {
+		switch role {
+		case "agent":
+			if bundle.Defaults.Agent != "" {
+				return bundle.Defaults.Agent
+			}
+		case "subAgent":
+			if bundle.Defaults.SubAgent != "" {
+				return bundle.Defaults.SubAgent
+			}
+			if bundle.Defaults.Ask != "" {
+				return bundle.Defaults.Ask
+			}
+		}
+		if len(bundle.Models) > 0 {
+			return bundle.Models[0].ID
+		}
+	}
+	return ""
+}
+
+func managedPolicyVersion(runtime *runtimebundle.Bundle) string {
+	if runtime == nil {
+		return ""
+	}
+	return runtime.Policy.Version
+}
+
+func managedDefaultMaxTokens(model modelcatalog.Model) int64 {
+	if model.MaxOutputTokens > 0 {
+		return int64(model.MaxOutputTokens)
+	}
+	return 4096
+}
+
+func managedDefaultReasoningEffort(model modelcatalog.Model, selected config.SelectedModel) string {
+	// An explicit selection (e.g. via the desktop adjustment surface) wins.
+	if selected.ReasoningEffort != "" {
+		return selected.ReasoningEffort
+	}
+	// The catalog default-flagged reasoning effort is the source of truth.
+	if resolved := model.ResolveDefaults().ReasoningEffort; resolved != "" {
+		return managedProviderReasoningEffort(resolved)
+	}
+	if len(model.ParameterOptions.ReasoningEfforts) > 0 {
+		// Catalog explicitly defines options with a "none" default.
+		return ""
+	}
+	if !managedSupportsAdaptiveReasoning(model) {
+		return ""
+	}
+	for _, role := range model.RuntimeRoles {
+		if role == "title" || role == "summarize" || role == "subAgent" {
+			return "low"
+		}
+	}
+	return "medium"
+}
+
+func managedProviderReasoningEffort(value string) string {
+	switch value {
+	case "none":
+		return ""
+	case "low":
+		return "low"
+	case "medium":
+		return "medium"
+	case "high", "extra_high", "max":
+		return "high"
+	default:
+		return value
+	}
+}
+
+func managedCanReason(model modelcatalog.Model) bool {
+	if isF4rgeProviderModel(model) {
+		return true
+	}
+	for _, capability := range model.Capabilities {
+		if capability == "reasoning" {
+			return true
+		}
+	}
+	return false
+}
+
+func managedSupportsAdaptiveReasoning(model modelcatalog.Model) bool {
+	for _, parameter := range model.RequestProfile.AcceptedParams {
+		if parameter == "reasoningEffort" {
+			return true
+		}
+	}
+	return false
+}
+
+func managedSupportsThinking(model modelcatalog.Model) bool {
+	for _, parameter := range model.RequestProfile.AcceptedParams {
+		if parameter == "thinking" {
+			return true
+		}
+	}
+	if isF4rgeProviderModel(model) && managedCanReason(model) {
+		return true
+	}
+	return false
+}
+
+func isF4rgeProviderModel(model modelcatalog.Model) bool {
+	return model.Provider == "f4rge" || strings.HasPrefix(model.ID, "f4rge/")
+}
+
+func isF4rgeManagedCompatProvider(providerID string) bool {
+	return providerID == "f4rge-f4rge"
+}
+
+func managedPromptMode(role string) string {
+	switch role {
+	case "ask", "plan":
+		return role
+	default:
+		return "agent"
 	}
 }
 

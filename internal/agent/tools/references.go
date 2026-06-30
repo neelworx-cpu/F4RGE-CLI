@@ -42,10 +42,6 @@ func NewReferencesTool(lspManager *lsp.Manager) fantasy.AgentTool {
 				return fantasy.NewTextErrorResponse("symbol is required"), nil
 			}
 
-			if lspManager.Clients().Len() == 0 {
-				return fantasy.NewTextErrorResponse("no LSP clients available"), nil
-			}
-
 			workingDir := cmp.Or(params.Path, ".")
 
 			matches, _, err := searchFiles(ctx, regexp.QuoteMeta(params.Symbol), workingDir, "", 100)
@@ -55,6 +51,17 @@ func NewReferencesTool(lspManager *lsp.Manager) fantasy.AgentTool {
 
 			if len(matches) == 0 {
 				return fantasy.NewTextResponse(fmt.Sprintf("Symbol '%s' not found", params.Symbol)), nil
+			}
+
+			for _, match := range matches {
+				absPath, absErr := filepath.Abs(match.path)
+				if absErr == nil {
+					lspManager.Start(ctx, absPath)
+					break
+				}
+			}
+			if lspManager.Clients().Len() == 0 {
+				return fantasy.NewTextErrorResponse(lspUnavailableMessage("references")), nil
 			}
 
 			var allLocations []protocol.Location

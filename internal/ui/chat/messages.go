@@ -346,13 +346,30 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 	icon := a.sty.Messages.AssistantInfoIcon.Render(styles.ModelIcon)
 	model := a.cfg.GetModel(a.message.Provider, a.message.Model)
 	if model == nil {
-		model = &catwalk.Model{Name: "Unknown Model"}
+		model = a.managedModelFromMessage()
+	}
+	if model == nil {
+		model = &catwalk.Model{Name: a.message.Model}
 	}
 	modelFormatted := a.sty.Messages.AssistantInfoModel.Render(model.Name)
-	providerName := a.providerName()
-	provider := a.sty.Messages.AssistantInfoProvider.Render(fmt.Sprintf("via %s", providerName))
-	assistant := fmt.Sprintf("%s %s %s %s", icon, modelFormatted, provider, infoMsg)
+	assistant := fmt.Sprintf("%s %s %s", icon, modelFormatted, infoMsg)
 	return common.Section(a.sty, assistant, width)
+}
+
+func (a *AssistantInfoItem) managedModelFromMessage() *catwalk.Model {
+	bundle, err := modelcatalog.LoadCached()
+	if err != nil || bundle == nil {
+		return nil
+	}
+	for _, model := range bundle.Models {
+		if model.ID == a.message.Model ||
+			model.ProviderModelID == a.message.Model ||
+			model.RequestProfile.ProviderModelID == a.message.Model ||
+			model.RequestProfile.DeploymentName == a.message.Model {
+			return &catwalk.Model{Name: model.Label}
+		}
+	}
+	return nil
 }
 
 func (a *AssistantInfoItem) providerName() string {

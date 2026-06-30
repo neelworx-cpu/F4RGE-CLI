@@ -148,6 +148,8 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 
 	if _, ok := m.com.Config().Providers.Get(managedconfig.ProviderID); ok {
 		m.isManaged = true
+	} else if bundle, err := modelcatalog.LoadCached(); err == nil && bundle != nil && len(bundle.Models) > 0 {
+		m.isManaged = true
 	} else if os.Getenv("F4RGE_CLI_ENABLE_LEGACY_PROVIDER_AUTH") == "1" {
 		var err error
 		m.providers, err = config.Providers(m.com.Config())
@@ -155,7 +157,7 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
 		}
 	} else {
-		return nil, fmt.Errorf("models are not ready; run `4rged login --force`")
+		return nil, fmt.Errorf("model catalog is not available yet. Sign in from the F4RGE dialog or retry after the catalog sync completes")
 	}
 
 	if err := m.setProviderItems(); err != nil {
@@ -534,7 +536,7 @@ func (m *Models) setManagedModelItems() error {
 		return err
 	}
 	if bundle == nil || len(bundle.Models) == 0 {
-		return fmt.Errorf("models are not ready; run `4rged login --force`")
+		return fmt.Errorf("model catalog is not available yet. Sign in from the F4RGE dialog or retry after the catalog sync completes")
 	}
 	t := m.com.Styles
 	cfg := m.com.Config()

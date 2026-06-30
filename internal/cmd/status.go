@@ -14,7 +14,7 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show F4RGE account and runtime status",
-	Long:  "Show the signed-in F4RGE account, organization, policy, model catalog, gateway, and CLI runtime status.",
+	Long:  "Show the signed-in F4RGE account, organization, policy, model catalog, credential lease, and CLI runtime status.",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		cwd, err := ResolveCwd(cmd)
 		if err != nil {
@@ -42,14 +42,14 @@ var statusCmd = &cobra.Command{
 			fmt.Println("Model catalog:      unavailable")
 			fmt.Println("Gateway:            not configured")
 			fmt.Println()
-			fmt.Println("Next step: run `4rged login` to connect this CLI to F4RGE.")
+			fmt.Println("Next step: open 4RGED and use the F4RGE sign-in dialog.")
 			return nil
 		}
 		if !f4rgesession.IsUsable(session) {
 			fmt.Println("F4RGE account:      not ready")
 			fmt.Println("Reason:             missing " + strings.Join(f4rgesession.MissingReadinessFields(session), ", "))
 			fmt.Println()
-			fmt.Println("Next step: run `4rged login --force`.")
+			fmt.Println("Next step: open 4RGED and refresh sign-in from the F4RGE sign-in dialog.")
 			return fmt.Errorf("F4RGE sign-in is incomplete")
 		}
 
@@ -58,7 +58,10 @@ var statusCmd = &cobra.Command{
 			status = "expired"
 		}
 		fmt.Println("F4RGE account:      " + status)
-		fmt.Println("User:               " + session.UserEmail)
+		fmt.Println("User:               " + fallback(session.UserDisplayName, session.UserEmail))
+		if session.UserEmail != "" && session.UserEmail != session.UserDisplayName {
+			fmt.Println("Email:              " + session.UserEmail)
+		}
 		fmt.Println("Organization:       " + session.OrganizationName)
 		fmt.Println("Policy snapshot:    " + session.PolicyVersion)
 		fmt.Println("Model catalog:      " + session.ModelCatalogVersion)

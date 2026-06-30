@@ -15,6 +15,12 @@ func HandleWorkspaceConfiguration(_ context.Context, _ string, params json.RawMe
 	return []map[string]any{{}}, nil
 }
 
+// HandleWorkDoneProgressCreate acknowledges server progress tokens. Some LSPs
+// like vtsls treat a missing handler as fatal.
+func HandleWorkDoneProgressCreate(_ context.Context, _ string, _ json.RawMessage) (any, error) {
+	return nil, nil
+}
+
 // HandleRegisterCapability handles capability registration requests
 func HandleRegisterCapability(_ context.Context, _ string, params json.RawMessage) (any, error) {
 	var registerParams protocol.RegistrationParams

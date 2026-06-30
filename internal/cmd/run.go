@@ -113,7 +113,7 @@ curl https://charm.land | 4rged run "Summarize this website"
 			}
 
 			if !ws.Config.IsConfigured() && !runtimebundle.Ready() {
-				return fmt.Errorf("4RGED is not signed in yet - run '4rged login' to connect F4RGE Auth and model catalog")
+				return fmt.Errorf("4RGED sign-in is not ready. Open 4RGED and use the F4RGE sign-in dialog")
 			}
 
 			if verbose {
@@ -132,7 +132,7 @@ curl https://charm.land | 4rged run "Summarize this website"
 		event.AppInitialized()
 
 		if !ws.Config().IsConfigured() && !runtimebundle.Ready() {
-			return fmt.Errorf("4RGED is not signed in yet - run '4rged login' to connect F4RGE Auth and model catalog")
+			return fmt.Errorf("4RGED sign-in is not ready. Open 4RGED and use the F4RGE sign-in dialog")
 		}
 
 		if verbose {

@@ -25,8 +25,12 @@ func Finalize(controlPlane controlplane.Client, poll *controlplane.CLIAuthPollRe
 	session := f4rgesession.ManagedSession{
 		AccessToken:      poll.RuntimeSession.Token,
 		RuntimeSessionID: poll.RuntimeSession.SessionID,
+		RuntimeScopes:    poll.RuntimeSession.Scopes,
 		SubjectUserID:    poll.RuntimeSession.SubjectUserID,
+		UserDisplayName:  poll.RuntimeSession.DisplayName,
+		UserEmail:        poll.RuntimeSession.Email,
 		OrganizationID:   organizationID,
+		OrganizationName: poll.RuntimeSession.OrganizationName,
 		GatewayEndpoint:  controlPlane.BaseURL,
 		PlatformEndpoint: controlPlane.BaseURL,
 	}
@@ -52,12 +56,24 @@ func Finalize(controlPlane controlplane.Client, poll *controlplane.CLIAuthPollRe
 	session.RuntimeBundleHash = runtime.ModelCatalog.CanonicalHash + ":" + runtime.PromptBundle.CanonicalHash + ":" + runtime.RuntimeConfig.Version
 	if runtime.Session != nil {
 		session.SubjectUserID = runtime.Session.SubjectUserID
+		if session.UserDisplayName == "" {
+			session.UserDisplayName = runtime.Session.DisplayName
+		}
+		if session.UserEmail == "" {
+			session.UserEmail = runtime.Session.Email
+		}
+		if session.OrganizationName == "" {
+			session.OrganizationName = runtime.Session.OrganizationName
+		}
 	}
 	if session.SubjectUserID == "" {
 		session.SubjectUserID = poll.RuntimeSession.SubjectUserID
 	}
 	if session.UserEmail == "" {
 		session.UserEmail = "unavailable"
+	}
+	if session.UserDisplayName == "" {
+		session.UserDisplayName = session.UserEmail
 	}
 	if session.OrganizationName == "" {
 		session.OrganizationName = runtime.OrganizationID

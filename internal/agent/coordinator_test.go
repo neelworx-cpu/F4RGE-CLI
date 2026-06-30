@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"charm.land/fantasy"
 	"charm.land/fantasy/providers/anthropic"
 	"charm.land/fantasy/providers/bedrock"
+	"charm.land/fantasy/providers/openaicompat"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -384,6 +386,30 @@ func TestUpdateParentSessionCost(t *testing.T) {
 		require.NoError(t, err)
 		assert.InDelta(t, 0.0, updated.Cost, 1e-9)
 	})
+}
+
+func TestGetProviderOptionsManagedF4rgeAzureOmitsThinkingParams(t *testing.T) {
+	model := Model{
+		CatwalkCfg: catwalk.Model{
+			ID:        "Kimi-K2.5",
+			Name:      "4RGE 1.5",
+			CanReason: true,
+		},
+		ModelCfg: config.SelectedModel{Think: true},
+	}
+	providerCfg := config.ProviderConfig{
+		ID:   "f4rge-f4rge",
+		Type: openaicompat.Name,
+	}
+
+	opts := getProviderOptions(model, providerCfg)
+
+	raw, ok := opts[openaicompat.Name]
+	require.True(t, ok)
+	data, err := json.Marshal(raw)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "enable_thinking")
+	assert.NotContains(t, string(data), `"thinking"`)
 }
 
 func TestGetProviderOptionsReasoningEffort(t *testing.T) {

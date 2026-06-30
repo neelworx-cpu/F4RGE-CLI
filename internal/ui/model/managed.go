@@ -20,6 +20,16 @@ func (m *UI) isManagedSignedIn() bool {
 }
 
 func (m *UI) isManagedRuntimeReady() bool {
+	session, err := f4rgesession.Load()
+	if err != nil || !f4rgesession.IsRuntimeSessionUsable(session) {
+		return false
+	}
+	if len(session.RuntimeScopes) == 0 {
+		return false
+	}
+	if !f4rgesession.HasRuntimeScope(session, "runtime.credentials.issue") {
+		return false
+	}
 	return runtimebundle.Ready()
 }
 

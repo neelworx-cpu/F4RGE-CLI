@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/client"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
+	f4rgecredentials "github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/credentials"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/modelcatalog"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/promptbundle"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/f4rge/runtimebundle"
@@ -100,6 +101,8 @@ plane.`,
 }
 
 func logoutF4RGE() error {
+	session, _ := f4rgesession.Load()
+	f4rgecredentials.ClearMemoryCache(session, "logout")
 	if err := f4rgesession.Clear(); err != nil {
 		return err
 	}

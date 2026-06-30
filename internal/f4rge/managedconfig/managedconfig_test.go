@@ -124,7 +124,7 @@ func newManagedConfig(models map[config.SelectedModelType]config.SelectedModel) 
 		Models: []catwalk.Model{
 			{
 				ID:                     "f4rge/4rge-2.5",
-				Name:                   "4RGE 2.5",
+				Name:                   "4RGE 2.0 Pro",
 				DefaultMaxTokens:       4096,
 				DefaultReasoningEffort: "high",
 			},

@@ -1,6 +1,8 @@
 package dialog
 
 import (
+	"strings"
+
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -89,6 +91,7 @@ func (m *ModelItem) SelectedModel() config.SelectedModel {
 			Provider:        managedconfig.ProviderID,
 			ReasoningEffort: m.model.DefaultReasoningEffort,
 			MaxTokens:       m.model.DefaultMaxTokens,
+			Think:           managedSupportsThinking(*m.managed),
 		}
 	}
 	return config.SelectedModel{
@@ -130,15 +133,82 @@ func NewManagedModelItem(t *styles.Styles, model modelcatalog.Model, providerNam
 			ID:                     model.ID,
 			Name:                   model.Label,
 			ContextWindow:          int64(model.ContextWindow),
-			CanReason:              true,
+			CanReason:              managedCanReason(model),
 			DefaultMaxTokens:       int64(model.MaxOutputTokens),
-			DefaultReasoningEffort: "medium",
+			DefaultReasoningEffort: managedDefaultReasoningEffort(model),
 		},
 		modelType:    typ,
 		t:            t,
 		cache:        make(map[int]string),
 		managed:      &model,
 		providerName: providerName,
+	}
+}
+
+func managedCanReason(model modelcatalog.Model) bool {
+	if strings.HasPrefix(model.ID, "f4rge/") {
+		return true
+	}
+	for _, capability := range model.Capabilities {
+		if capability == "reasoning" {
+			return true
+		}
+	}
+	return false
+}
+
+func managedSupportsThinking(model modelcatalog.Model) bool {
+	// Catalog thinking toggle wins; otherwise fall back to accepted params.
+	for _, toggle := range model.ParameterOptions.Toggles {
+		if toggle.ID == "thinking" {
+			return toggle.Default || toggle.Value
+		}
+	}
+	for _, parameter := range model.RequestProfile.AcceptedParams {
+		if parameter == "thinking" {
+			return true
+		}
+	}
+	if strings.HasPrefix(model.ID, "f4rge/") && managedCanReason(model) {
+		return true
+	}
+	return false
+}
+
+func managedDefaultReasoningEffort(model modelcatalog.Model) string {
+	// The catalog default-flagged reasoning effort is the source of truth.
+	if resolved := model.ResolveDefaults().ReasoningEffort; resolved != "" {
+		return managedProviderReasoningEffort(resolved)
+	}
+	if len(model.ParameterOptions.ReasoningEfforts) > 0 {
+		return ""
+	}
+	for _, parameter := range model.RequestProfile.AcceptedParams {
+		if parameter != "reasoningEffort" {
+			continue
+		}
+		for _, role := range model.RuntimeRoles {
+			if role == "title" || role == "summarize" || role == "subAgent" {
+				return "low"
+			}
+		}
+		return "medium"
+	}
+	return ""
+}
+
+func managedProviderReasoningEffort(value string) string {
+	switch value {
+	case "none":
+		return ""
+	case "low":
+		return "low"
+	case "medium":
+		return "medium"
+	case "high", "extra_high", "max":
+		return "high"
+	default:
+		return value
 	}
 }
 

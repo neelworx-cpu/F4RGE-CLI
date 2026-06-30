@@ -18,6 +18,7 @@ import (
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/config"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/csync"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/fsext"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp/bootstrap"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
@@ -154,11 +155,6 @@ func (s *Manager) startServer(ctx context.Context, name, filepath string, server
 		return
 	}
 
-	cfg := s.buildConfig(name, server)
-	if cfg.Disabled {
-		return
-	}
-
 	if client, ok := s.clients.Get(name); ok {
 		switch client.GetServerState() {
 		case StateReady, StateStarting, StateDisabled:
@@ -168,20 +164,32 @@ func (s *Manager) startServer(ctx context.Context, name, filepath string, server
 		}
 	}
 
+	originalCommand := server.Command
 	if !isUserConfigured {
 		if s.recentlyUnavailable(name) {
 			return
 		}
 		if _, err := exec.LookPath(server.Command); err != nil {
-			slog.Debug("LSP server not installed, skipping", "name", name, "command", server.Command)
-			s.markUnavailable(name)
-			return
+			resolved, ok, status := bootstrap.Resolve(ctx, name, server.Command)
+			if !ok {
+				slog.Debug("LSP server unavailable", "name", name, "command", server.Command, "status", status.Kind, "message", status.Message)
+				s.markUnavailable(name)
+				return
+			}
+			copied := *server
+			copied.Command = resolved
+			server = &copied
 		}
 		s.clearUnavailable(name)
-		if skipAutoStartCommands[server.Command] {
-			slog.Debug("LSP command too generic for auto-start, skipping", "name", name, "command", server.Command)
+		if skipAutoStartCommands[originalCommand] {
+			slog.Debug("LSP command too generic for auto-start, skipping", "name", name, "command", originalCommand)
 			return
 		}
+	}
+
+	cfg := s.buildConfig(name, server)
+	if cfg.Disabled {
+		return
 	}
 
 	// this is the slowest bit, so we do it last.

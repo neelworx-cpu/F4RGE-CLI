@@ -8,8 +8,20 @@ if ! command -v "$go_bin" >/dev/null 2>&1; then
   if [[ -x /tmp/go/bin/go ]]; then
     go_bin="/tmp/go/bin/go"
   else
-    echo "Go toolchain not found. Set GO=/path/to/go or install Go." >&2
-    exit 1
+    goos="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    goarch="$(uname -m)"
+    case "$goarch" in
+      arm64|aarch64) goarch="arm64" ;;
+      x86_64|amd64) goarch="amd64" ;;
+      *) echo "Unsupported architecture for automatic Go install: $goarch" >&2; exit 1 ;;
+    esac
+    archive="go1.26.3.${goos}-${goarch}.tar.gz"
+    url="https://go.dev/dl/${archive}"
+    echo "Go toolchain not found. Installing temporary Go 1.26.3 to /tmp/go..." >&2
+    curl -fsSL "$url" -o "/tmp/${archive}"
+    rm -rf /tmp/go
+    tar -C /tmp -xzf "/tmp/${archive}"
+    go_bin="/tmp/go/bin/go"
   fi
 fi
 

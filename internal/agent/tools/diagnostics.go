@@ -13,6 +13,7 @@ import (
 	"charm.land/fantasy"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp"
+	"github.com/neelworx-cpu/F4RGE-CLI/internal/lsp/bootstrap"
 )
 
 type DiagnosticsParams struct {
@@ -29,10 +30,10 @@ func NewDiagnosticsTool(lspManager *lsp.Manager) fantasy.AgentTool {
 		DiagnosticsToolName,
 		diagnosticsDescription,
 		func(ctx context.Context, params DiagnosticsParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			if lspManager.Clients().Len() == 0 {
-				return fantasy.NewTextErrorResponse("no LSP clients available"), nil
-			}
 			notifyLSPs(ctx, lspManager, params.FilePath)
+			if lspManager.Clients().Len() == 0 {
+				return fantasy.NewTextErrorResponse(lspUnavailableMessage("diagnostics")), nil
+			}
 			output := getDiagnostics(params.FilePath, lspManager)
 			return fantasy.NewTextResponse(output), nil
 		},
@@ -173,11 +174,47 @@ func getDiagnostics(filePath string, manager *lsp.Manager) string {
 		fmt.Fprintf(&output, "Current file: %d errors, %d warnings\n", fileErrors, fileWarnings)
 		fmt.Fprintf(&output, "Project: %d errors, %d warnings\n", projectErrors, projectWarnings)
 		output.WriteString("</diagnostic_summary>\n")
+	} else if filePath != "" {
+		var readyClients []string
+		for lspName, client := range manager.Clients().Seq2() {
+			if client.HandlesFile(filePath) {
+				readyClients = append(readyClients, lspName)
+			}
+		}
+		if len(readyClients) > 0 {
+			sort.Strings(readyClients)
+			output.WriteString("<diagnostic_summary>\n")
+			fmt.Fprintf(&output, "LSP ready: %s\n", strings.Join(readyClients, ", "))
+			output.WriteString("No diagnostics returned for current file.\n")
+			output.WriteString("</diagnostic_summary>\n")
+		}
 	}
 
 	out := output.String()
 	slog.Debug("Diagnostics", "output", out)
 	return out
+}
+
+func lspUnavailableMessage(action string) string {
+	statuses := bootstrap.Statuses()
+	if len(statuses) == 0 {
+		return fmt.Sprintf("No LSP clients are available for %s yet. Use view, grep, glob, and edit as fallbacks; 4RGED will auto-install common language servers when a matching file is opened.", action)
+	}
+	var lines []string
+	lines = append(lines, fmt.Sprintf("No LSP clients are available for %s.", action))
+	for _, status := range statuses {
+		name := status.Name
+		if name == "" {
+			name = status.Command
+		}
+		detail := string(status.Kind)
+		if status.Message != "" {
+			detail += ": " + status.Message
+		}
+		lines = append(lines, fmt.Sprintf("- %s: %s", name, detail))
+	}
+	lines = append(lines, "Use view, grep, glob, and edit as fallbacks when LSP is unavailable.")
+	return strings.Join(lines, "\n")
 }
 
 func writeDiagnostics(output *strings.Builder, tag string, in []string) {

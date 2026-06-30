@@ -56,7 +56,10 @@ type RuntimeSession struct {
 	Surface          string   `json:"surface"`
 	Kind             string   `json:"kind"`
 	OrganizationID   string   `json:"organizationId"`
+	OrganizationName string   `json:"organizationName,omitempty"`
 	SubjectUserID    string   `json:"subjectUserId,omitempty"`
+	DisplayName      string   `json:"displayName,omitempty"`
+	Email            string   `json:"email,omitempty"`
 	DeviceID         string   `json:"deviceId,omitempty"`
 	DeviceLabel      string   `json:"deviceLabel,omitempty"`
 	ClientVersion    string   `json:"clientVersion,omitempty"`
@@ -202,6 +205,28 @@ func (c Client) GetJSONWithToken(token string, path string, query map[string]str
 	if token != "" {
 		httpRequest.Header.Set("Authorization", "Bearer "+token)
 	}
+	return c.doJSON(httpRequest, target)
+}
+
+func (c Client) PostJSON(session *f4rgesession.ManagedSession, path string, body any, target any) error {
+	if session == nil || session.AccessToken == "" {
+		return fmt.Errorf("F4RGE sign-in required")
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	endpoint, err := c.endpoint(path)
+	if err != nil {
+		return err
+	}
+	httpRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	httpRequest.Header.Set("Accept", "application/json")
+	httpRequest.Header.Set("Content-Type", "application/json")
+	httpRequest.Header.Set("Authorization", "Bearer "+session.AccessToken)
 	return c.doJSON(httpRequest, target)
 }
 

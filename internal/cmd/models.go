@@ -29,7 +29,7 @@ Local BYOK/provider models are not part of the managed F4RGE CLI product path.`,
 			return err
 		}
 		if !f4rgesession.IsUsable(session) {
-			return fmt.Errorf("F4RGE sign-in is incomplete; run `4rged login --force`")
+			return fmt.Errorf("F4RGE sign-in is incomplete. Open 4RGED and refresh sign-in from the F4RGE sign-in dialog")
 		}
 		bundle, catalogErr := modelcatalog.Fetch(session)
 		if catalogErr == nil && bundle != nil && len(bundle.Models) > 0 {
@@ -52,7 +52,7 @@ Local BYOK/provider models are not part of the managed F4RGE CLI product path.`,
 		if session == nil {
 			fmt.Println("Sign in to F4RGE to load your managed model catalog.")
 			fmt.Println()
-			fmt.Println("Next step: run `4rged login`.")
+			fmt.Println("Next step: open 4RGED and use the F4RGE sign-in dialog.")
 			return nil
 		}
 		return fmt.Errorf("could not load managed model catalog: %w", catalogErr)

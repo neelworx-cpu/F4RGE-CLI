@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"strings"
 
 	"charm.land/fantasy"
 	"github.com/neelworx-cpu/F4RGE-CLI/internal/session"
@@ -20,7 +21,7 @@ type TodosParams struct {
 
 type TodoItem struct {
 	Content    string `json:"content" description:"What needs to be done (imperative form)"`
-	Status     string `json:"status" description:"Task status: pending, in_progress, or completed"`
+	Status     string `json:"status" description:"Task status" enum:"pending,in_progress,completed"`
 	ActiveForm string `json:"active_form" description:"Present continuous form (e.g., 'Running tests')"`
 }
 
@@ -54,11 +55,14 @@ func NewTodosTool(sessions session.Service) fantasy.AgentTool {
 				oldStatusByContent[todo.Content] = todo.Status
 			}
 
-			for _, item := range params.Todos {
-				switch item.Status {
+			for i := range params.Todos {
+				params.Todos[i].Status = normalizeTodoStatus(params.Todos[i].Status)
+				switch params.Todos[i].Status {
 				case "pending", "in_progress", "completed":
 				default:
-					return fantasy.ToolResponse{}, fmt.Errorf("invalid status %q for todo %q", item.Status, item.Content)
+					resp := fantasy.NewTextErrorResponse(fmt.Sprintf("invalid status %q for todo %q; use pending, in_progress, or completed", params.Todos[i].Status, params.Todos[i].Content))
+					resp.StopTurn = false
+					return resp, nil
 				}
 			}
 
@@ -132,4 +136,14 @@ func NewTodosTool(sessions session.Service) fantasy.AgentTool {
 			return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
 		},
 	)
+}
+
+func normalizeTodoStatus(status string) string {
+	status = strings.TrimSpace(strings.ToLower(status))
+	for _, valid := range []string{"in_progress", "completed", "pending"} {
+		if status == valid || strings.HasPrefix(status, valid+" ") {
+			return valid
+		}
+	}
+	return status
 }

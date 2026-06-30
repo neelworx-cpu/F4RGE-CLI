@@ -12,9 +12,17 @@ import (
 )
 
 type InferenceMessage struct {
-	Role       string `json:"role"`
-	Content    string `json:"content"`
-	ToolCallID string `json:"toolCallId,omitempty"`
+	Role       string              `json:"role"`
+	Content    string              `json:"content,omitempty"`
+	ToolCalls  []InferenceToolCall `json:"toolCalls,omitempty"`
+	ToolCallID string              `json:"toolCallId,omitempty"`
+}
+
+type InferenceToolCall struct {
+	ToolCallID       string          `json:"toolCallId"`
+	Name             string          `json:"name"`
+	ArgumentsJSON    string          `json:"argumentsJson"`
+	ProviderMetadata json.RawMessage `json:"providerMetadata,omitempty"`
 }
 
 type InferenceTool struct {
