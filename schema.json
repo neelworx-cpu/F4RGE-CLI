@@ -707,6 +707,15 @@
           ],
           "description": "Diff mode for the TUI interface"
         },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "light"
+          ],
+          "description": "Theme for the TUI interface",
+          "default": "dark"
+        },
         "completions": {
           "$ref": "#/$defs/Completions",
           "description": "Completions UI options"
